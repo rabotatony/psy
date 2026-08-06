@@ -51,15 +51,21 @@
   <div class="panel hideable">
     <div class="ptitle"><h2>SCENES</h2><small>6 עולמות · BPM אוטומטי</small></div>
     <div class="scenes" id="scenes"></div>
+    <div class="stylespec" dir="ltr">
+      <span class="styletag">PROG</span>
+      <input type="range" id="styleRange" min="0" max="1000" value="333">
+      <span class="styletag">NIGHT</span>
+    </div>
+    <div class="stylename" id="styleName" dir="ltr">FULL-ON</div>
   </div>
 
   <div class="panel">
-    <div class="ptitle"><h2>MACROS</h2><small>סיבוב = קסם · MIDI LEARN</small></div>
+    <div class="ptitle"><h2>MACROS</h2><small>ENERGY · SPACE · COLOR · CHAOS</small></div>
     <div class="knobs" dir="ltr">
-      <div class="knobwrap"><div class="knob" id="kFilter"><div class="cap"></div></div><span class="klabel">FILTER</span><span class="kval"></span></div>
+      <div class="knobwrap"><div class="knob" id="kFilter"><div class="cap"></div></div><span class="klabel">ENERGY</span><span class="kval"></span></div>
       <div class="knobwrap"><div class="knob" id="kSpace"><div class="cap"></div></div><span class="klabel">SPACE</span><span class="kval"></span></div>
-      <div class="knobwrap"><div class="knob" id="kDrive"><div class="cap"></div></div><span class="klabel">DRIVE</span><span class="kval"></span></div>
-      <div class="knobwrap"><div class="knob" id="kSwing"><div class="cap"></div></div><span class="klabel">SWING</span><span class="kval"></span></div>
+      <div class="knobwrap"><div class="knob" id="kDrive"><div class="cap"></div></div><span class="klabel">COLOR</span><span class="kval"></span></div>
+      <div class="knobwrap"><div class="knob" id="kSwing"><div class="cap"></div></div><span class="klabel">CHAOS</span><span class="kval"></span></div>
     </div>
     <div class="xy" id="xy" dir="ltr"><div id="xydot"></div><span class="xytag">MORPH XY · X=תנועה · Y=רזוננס/פידבק</span></div>
   </div>
