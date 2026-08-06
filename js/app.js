@@ -1,6 +1,6 @@
-import {clamp,SCENES,SCALES,LANES,LS_KEY,SECTIONS_BY_NAME,DEFAULT_SONG} from './core.js';
+import {clamp,SCENES,SCALES,LANES,LS_KEY,SECTIONS_BY_NAME,DEFAULT_SONG,STYLE_ORDER} from './core.js';
 import {eng} from './engine.js';
-import {seq,genMotif,resetArrange,bounce} from './music.js';
+import {seq,genMotif,resetArrange,bounce,blendedScene} from './music.js';
 import {lop,bufferToWav,downloadBlob} from './looper.js';
 import {viz} from './viz.js';
 
@@ -20,6 +20,14 @@ function toast(msg,fatal){
   toastT=setTimeout(()=>el.classList.remove('show'),fatal?5000:2200);
 }
 window.addEventListener('error',e=>toast('שגיאה: '+(e.message||'unknown'),true));
+function rmsDb(buf){
+  let sq=0,n=0;
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i+=8){sq+=d[i]*d[i]; n++;}
+  }
+  return 10*Math.log10(Math.max(1e-9,sq/n));
+}
 function normalizeBuffer(buf,target){
   let peak=0;
   for(let ch=0;ch<buf.numberOfChannels;ch++){
@@ -39,7 +47,7 @@ if(location.protocol==='file:'){
 }
 
 let state={
-  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,
+  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,stylePos:0.3333,
   song:DEFAULT_SONG.slice(),
   macros:{filter:0.85,space:0.35,drive:0.15,morphX:0.5,morphY:0.45},
   edits:{},ccMap:{},patterns:null,scaleArr:SCALES[SCENES[0].scale],
@@ -47,7 +55,7 @@ let state={
 
 function projectData(){
   return {v:5,bpm:state.bpm,scene:state.scene,autoArr:state.autoArr,swing:state.swing,
-          arp:state.arp,song:state.song,
+          arp:state.arp,song:state.song,stylePos:state.stylePos,
           macros:state.macros,edits:state.edits,ccMap:state.ccMap};
 }
 function applyProject(d,silent){
@@ -57,6 +65,7 @@ function applyProject(d,silent){
   if(typeof d.autoArr==='boolean') state.autoArr=d.autoArr;
   if(typeof d.swing==='number') state.swing=clamp(d.swing);
   if(typeof d.arp==='boolean') state.arp=d.arp;
+  if(typeof d.stylePos==='number') state.stylePos=clamp(d.stylePos);
   if(Array.isArray(d.song)&&d.song.length){
     state.song=d.song.map(n=>SECTIONS_BY_NAME[n]?n:'DROP');
   }
@@ -105,6 +114,7 @@ function cycleSong(i){
   state.song[i]=SECTION_NAMES[(idx+1)%SECTION_NAMES.length];
   resetArrange(); buildSong(); save();
 }
+safeOn('#styleRange','input',e=>setStylePos(parseInt(e.target.value,10)/1000,false));
 safeOn('#btnSongReset','click',()=>{
   state.song=DEFAULT_SONG.slice();
   resetArrange(); buildSong(); save();
@@ -137,17 +147,32 @@ function buildScenes(){
     wrap.appendChild(b);
   });
 }
-function applyScene(i,opts){
-  opts=opts||{};
-  state.scene=i;
-  const sc=SCENES[i];
+function styleAnchor(i){return STYLE_ORDER.indexOf(i)/(STYLE_ORDER.length-1);}
+function setStylePos(pos,announce){
+  state.stylePos=clamp(pos);
+  const n=STYLE_ORDER.length;
+  const nearIdx=STYLE_ORDER[Math.round(state.stylePos*(n-1))];
+  state.scene=nearIdx;
+  const sc=blendedScene(state);
   state.scaleArr=SCALES[sc.scale];
   state.patterns=currentEdit().patterns;
   regenMotif();
-  document.documentElement.style.setProperty('--hue',sc.hue);
-  buildScenes(); rebuildGrid(); resetArrange(); save();
-  if(!opts.init) setBpm(sc.bpm);
-  if(!opts.init) toast('סצנה: '+sc.heb+' ('+sc.name+')');
+  document.documentElement.style.setProperty('--hue',Math.round(sc.hue));
+  buildScenes(); rebuildGrid(); resetArrange();
+  setBpm(sc.bpm);
+  const sr=$('#styleRange'); if(sr) sr.value=String(Math.round(state.stylePos*1000));
+  const sn=$('#styleName');
+  if(sn){
+    const f=state.stylePos*(n-1); const i0=Math.min(n-2,Math.floor(f)); const t=Math.round((f-i0)*100);
+    const A=SCENES[STYLE_ORDER[i0]],B=SCENES[STYLE_ORDER[i0+1]];
+    sn.textContent=t===0?A.name:(t===100?B.name:A.name+' ▸ '+B.name+' '+t+'%');
+  }
+  save();
+  if(announce) toast('סצנה: '+sc.heb+' ('+sc.name+')');
+}
+function applyScene(i,opts){
+  opts=opts||{};
+  setStylePos(styleAnchor(i),!opts.init);
 }
 
 const undoStack=[];
@@ -216,7 +241,7 @@ function setPlayhead(s){
 const knobRenders=[];
 let learnArmed=false,learnTarget=null;
 function refreshKnobs(){knobRenders.forEach(r=>r());}
-function bindKnob(el,key){
+function bindKnob(el,key,post){
   if(!el) return;
   let dragging=false,sy=0,sv=0;
   const kval=el.parentElement.querySelector('.kval');
@@ -240,7 +265,7 @@ function bindKnob(el,key){
   el.addEventListener('pointermove',e=>{
     if(!dragging) return;
     state.macros[key]=clamp(sv+(sy-e.clientY)/140);
-    render(); eng.applyMacros(); save();
+    render(); if(post)post(state.macros[key]); eng.applyMacros(); save();
   });
   const up=()=>{dragging=false;};
   el.addEventListener('pointerup',up);
@@ -384,7 +409,7 @@ safeOn('#btnExport','click',async()=>{
   try{
     const buf=normalizeBuffer(await bounce(lop.recSel),0.97);
     downloadBlob(bufferToWav(buf),'psyweave-'+state.bpm+'bpm-'+lop.recSel+'bars.wav');
-    toast('קובץ WAV מוכן ⬇');
+    toast('WAV ⬇ · RMS '+rmsDb(buf).toFixed(1)+' dB');
   }catch(e){toast('שגיאת ייצוא: '+(e&&e.message?e.message:'unknown'),true);}
   exporting=false;
   if(btn){btn.classList.remove('busy'); btn.textContent='⬇ WAV';}
@@ -529,9 +554,9 @@ applyScene(state.scene,{init:true});
 buildSong();
 lop.render();
 renderXY();
-bindKnob($('#kFilter'),'filter');
+bindKnob($('#kFilter'),'filter',v=>{state.macros.drive=clamp(v*0.85);});
 bindKnob($('#kSpace'),'space');
-bindKnob($('#kDrive'),'drive');
+bindKnob($('#kDrive'),'morphX');
 bindKnob($('#kSwing'),'swing');
 refreshKnobs();
 requestAnimationFrame(frame);
