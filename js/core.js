@@ -43,6 +43,9 @@ export const SCENES=[
   {name:'NIGHT',heb:'לילה',hue:330,root:41,scale:'HARM',leadType:'acid',pad:false,bassLong:false,bpm:150,
    kick:Q,bass:ROLL,bassOct:OCTB,hat:A16,open:[2,6,10,14],clap:[4,12],perc:[3,10,14],percFreq:280,
    gate:RHYTHMS[2],chord:[0,7],seed:197},
+  {name:'FOLD',heb:'פולד',hue:200,root:44,scale:'HARM',leadType:'fold',pad:true,bassLong:false,bpm:145,
+   kick:Q,bass:ROLL,bassOct:OCTA,hat:A16,open:[2,6,10,14],clap:[4,12],perc:[3,11],percFreq:310,
+   gate:RHYTHMS[3],chord:[0,7,12],seed:233},
 ];
 
 export const ARRANGEMENT=[

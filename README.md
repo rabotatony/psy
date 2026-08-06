@@ -1,6 +1,6 @@
-# PSYWEAVE v6 — Psytrance Groovebox & Live Looper
+# PSYWEAVE v7 — Psytrance Groovebox & Live Looper
 
-מנוע פסיי-טראנס מלא בדפדפן: סינתזה, תופים, סקוונסר, Song Mode עורך, ארנג'ר אוטומטי, לופר חי, ייצוא WAV ו-STEMS, שמירת פרויקטים ו-MIDI.
+מנוע פסיי-טראנס מלא בדפדפן: סינתזה עמוקה, סקוונסר, Song Mode, ארנג'ר אוטומטי, לופר חי, ייצוא WAV/STEMS מנורמל-לאודנס, ו-MIDI.
 
 ## הרצה
 
@@ -8,26 +8,34 @@
 
 פתח http://localhost:8000 — חובה דרך שרת, לא ישירות מקובץ.
 
+## מנוע הסאונד v7
+
+- Wavefolder Lead: סינתזת sin-folding לתוך tanh — הגרסה הפסיכדלית, סצנת FOLD ייעודית
+- Acid 303 אמיתי: square, envelope עמוק לפילטר, accents על downbeats, glide
+- Saw leads עם fold עדין נשלט ב-MORPH X
+- Sidechain pump עמוק וחלק על בס/פאדים/לופים
+- Ping-pong delay עם פידבק מוגבל תדרים (low+high cut)
+- ריוורב עם early reflections + דיפוזיה
+- לימיטר מאסטר + soft-clip
+- Haas widener ללידים
+- ייצוא WAV ו-STEMS עם peak normalization (0.97/0.95)
+
 ## מה יש בפנים
 
-- Auto-Arranger + Song Mode: שרשרת סקציות ניתנת לעריכה (INTRO/BUILD/DROP/BREAK/RISER/CLIMAX) עם risers ו-crashes אוטומטיים
-- Sidechain Pump אמיתי על בס/פאדים/לופים
-- מנוע סאונד v6: לימיטר מאסטר, קיק עם mid-punch, drive לבס, ריוורב עם early reflections, Haas widener ללידים
-- 6 סצנות: Full-On, Dark, Prog, Acid, Goa, Night — עם BPM אוטומטי
+- Auto-Arranger + Song Mode: שרשרת סקציות ניתנת לעריכה עם risers ו-crashes אוטומטיים
+- 7 סצנות: Full-On, Dark, Prog, Acid, Goa, Night, Fold — BPM אוטומטי לכל סצנה
 - מלודיות Motif עם call & response + MUTATE + ARP דיאטוני
 - לופר 4 ערוצים: מאסטר + מיקרופון, quantize לתיבה, פיצוי טמפו, מדי עוצמה
-- EXPORT WAV מיידי + STEMS (drums/bass/lead/pads/loops) לשימוש ב-DAW
+- STEMS: drums/bass/lead/pads/loops כקבצי WAV נפרדים
 - SAVE/LOAD פרויקט כ-JSON
-- MIDI + LEARN למיפוי CC למקרואים
-- UNDO לסקוונסר, כלי רנדומליזציה לכל ערוץ
-- מצב PERF להופעת לייב
-- פינג-פונג delay, ריוורב, drive, swing
-- שמירה אוטומטית ב-localStorage + שגיאות גלויות
+- MIDI + LEARN למיפוי CC
+- UNDO, רנדומליזציה לכל ערוץ, מצב PERF להופעה
+- שמירה אוטומטית + שגיאות גלויות
 
 ## קיצורי מקלדת
 
-Space = Play/Stop · 1-6 = סצנות · R = הקלטה · M = מוטציה · D = דרופ · F = פיל · U = ביטול
+Space = Play/Stop · 1-7 = סצנות · R = הקלטה · M = מוטציה · D = דרופ · F = פיל · U = ביטול
 
 ## GitHub Pages
 
-כל push מפורסם אוטומטית דרך .github/workflows/deploy.yml (מקור: GitHub Actions).
+כל push מפורסם אוטומטית דרך .github/workflows/deploy.yml (GitHub Actions).

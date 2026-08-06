@@ -40,17 +40,22 @@ const EngineProto={
       this.out.connect(this.recDest);
     }
 
+    // v7: ping-pong delay with band-limited feedback (dub tails)
     this.delaySend=c.createGain();
     this.delayL=c.createDelay(2); this.delayR=c.createDelay(2);
     this.fL=c.createBiquadFilter(); this.fL.type='lowpass'; this.fL.frequency.value=3300;
     this.fR=c.createBiquadFilter(); this.fR.type='lowpass'; this.fR.frequency.value=3300;
+    this.hpL=c.createBiquadFilter(); this.hpL.type='highpass'; this.hpL.frequency.value=140;
+    this.hpR=c.createBiquadFilter(); this.hpR.type='highpass'; this.hpR.frequency.value=140;
     this.fb=c.createGain(); this.fb2=c.createGain();
     this.panL=this.mkPan(-0.65); this.panR=this.mkPan(0.65);
     this.delaySend.connect(this.delayL);
-    this.delayL.connect(this.fL); this.fL.connect(this.panL); this.panL.connect(this.sum);
-    this.fL.connect(this.fb); this.fb.connect(this.delayR);
-    this.delayR.connect(this.fR); this.fR.connect(this.panR); this.panR.connect(this.sum);
-    this.fR.connect(this.fb2); this.fb2.connect(this.delayL);
+    this.delayL.connect(this.fL); this.fL.connect(this.hpL);
+    this.hpL.connect(this.panL); this.panL.connect(this.sum);
+    this.hpL.connect(this.fb); this.fb.connect(this.delayR);
+    this.delayR.connect(this.fR); this.fR.connect(this.hpR);
+    this.hpR.connect(this.panR); this.panR.connect(this.sum);
+    this.hpR.connect(this.fb2); this.fb2.connect(this.delayL);
 
     this.revSend=c.createGain();
     this.conv=c.createConvolver(); this.conv.buffer=this.makeImpulse(2.4,3.2);
@@ -111,6 +116,15 @@ const EngineProto={
     for(let i=0;i<n;i++){const x=i/(n-1)*2-1; c[i]=Math.tanh(k*x)/Math.tanh(k);}
     return c;
   },
+  // v7: wavefolder transfer — sin folding into tanh saturation
+  foldCurve(amount){
+    const n=1024,c=new Float32Array(n);
+    for(let i=0;i<n;i++){
+      const x=i/(n-1)*2-1;
+      c[i]=Math.tanh(Math.sin(x*amount*Math.PI*0.5));
+    }
+    return c;
+  },
   softClip(){
     const n=257,c=new Float32Array(n);
     for(let i=0;i<n;i++){const x=i/(n-1)*2-1; c[i]=Math.tanh(1.8*x)/Math.tanh(1.8);}
@@ -136,12 +150,13 @@ const EngineProto={
   targetCut(){return 100*Math.pow(160,clamp(this.st.macros.filter)*this.arrFilt);},
   setSectionFilter(f){this.arrFilt=f; this.applyMacros(1.4);},
 
-  duckHit(t,depth=0.3){
+  // v7: deeper, smoother pump
+  duckHit(t,depth=0.22){
     const g=this.duck.gain;
     g.cancelScheduledValues(t);
     g.setValueAtTime(Math.max(0.05,g.value),t);
-    g.linearRampToValueAtTime(depth,t+0.012);
-    g.exponentialRampToValueAtTime(1,t+0.3);
+    g.linearRampToValueAtTime(depth,t+0.008);
+    g.exponentialRampToValueAtTime(1,t+0.35);
   },
 
   mkSend(amt){
@@ -178,7 +193,7 @@ const EngineProto={
     cg.gain.exponentialRampToValueAtTime(0.001,t+0.02);
     s.connect(hp); hp.connect(cg); cg.connect(this.sum);
     s.start(t); s.stop(t+0.03);
-    this.duckHit(t,0.3);
+    this.duckHit(t,0.22);
   },
 
   hat(t,open,vol=0.13,pan=0){
@@ -258,31 +273,52 @@ const EngineProto={
     const e=t+dur+0.03; o1.stop(e); o2.stop(e); sub.stop(e);
   },
 
-  lead(t,midi,dur,type){
+  // v7 lead: acid 303 (square + accent), fold engine, saw with light fold
+  lead(t,midi,dur,type,vol=1){
     const c=this.ctx,m=this.st.macros,f=mtof(midi);
     const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=1+m.morphY*12;
     const g=c.createGain(),res=this.mkSend(0.45);
     const base=Math.max(180,140+m.filter*5200);
     if(type==='acid'){
-      const o=c.createOscillator(); o.type='sawtooth';
+      const o=c.createOscillator(); o.type='square';
       if(this.lastAcidF>0){
         o.frequency.setValueAtTime(this.lastAcidF,t);
         o.frequency.exponentialRampToValueAtTime(f,t+0.045);
       }else o.frequency.setValueAtTime(f,t);
       this.lastAcidF=f;
-      fl.frequency.setValueAtTime(base*0.5,t);
-      fl.frequency.exponentialRampToValueAtTime(Math.min(base*5,9500),t+0.02);
-      fl.frequency.exponentialRampToValueAtTime(base*0.7,t+dur);
+      fl.frequency.setValueAtTime(base*0.35,t);
+      fl.frequency.exponentialRampToValueAtTime(Math.min(base*(4+vol*3),11000),t+0.025);
+      fl.frequency.exponentialRampToValueAtTime(base*0.6,t+dur);
+      const pk=0.24+vol*0.1;
       g.gain.setValueAtTime(0,t);
-      g.gain.linearRampToValueAtTime(0.3,t+0.005);
-      g.gain.setValueAtTime(0.3,t+dur*0.6);
+      g.gain.linearRampToValueAtTime(pk,t+0.005);
+      g.gain.setValueAtTime(pk,t+dur*0.6);
       g.gain.linearRampToValueAtTime(0,t+dur+0.05);
       o.connect(fl); o.start(t); o.stop(t+dur+0.1);
+    }else if(type==='fold'){
+      const o1=c.createOscillator(),o2=c.createOscillator(),o3=c.createOscillator();
+      o1.type='sawtooth'; o2.type='sawtooth'; o3.type='square';
+      o1.frequency.value=f; o2.frequency.value=f; o3.frequency.value=f;
+      o1.detune.value=-6; o2.detune.value=6; o3.detune.value=3;
+      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(2.5+m.morphX*4); ws.oversample='2x';
+      const fg=c.createGain(); fg.gain.value=0.5;
+      fl.frequency.setValueAtTime(base*0.5,t);
+      fl.frequency.exponentialRampToValueAtTime(Math.min(base*3.5,9500),t+0.02);
+      fl.frequency.exponentialRampToValueAtTime(base*0.8,t+dur);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.26,t+0.006);
+      g.gain.setValueAtTime(0.26,t+dur*0.7);
+      g.gain.linearRampToValueAtTime(0,t+dur+0.08);
+      o1.connect(ws); o2.connect(ws); o3.connect(fg); fg.connect(ws);
+      ws.connect(fl);
+      o1.start(t); o2.start(t); o3.start(t);
+      const e=t+dur+0.12; o1.stop(e); o2.stop(e); o3.stop(e);
     }else{
       const o1=c.createOscillator(),o2=c.createOscillator();
       o1.type='sawtooth'; o2.type='sawtooth';
       o1.frequency.value=f; o2.frequency.value=f;
       o1.detune.value=-(4+m.morphX*14); o2.detune.value=4+m.morphX*14;
+      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(1+m.morphX*1.4); ws.oversample='2x';
       const lfo=c.createOscillator(),lg=c.createGain();
       lfo.type='sine'; lfo.frequency.value=0.5+m.morphX*11;
       lg.gain.value=500+m.morphX*2400;
@@ -292,7 +328,7 @@ const EngineProto={
       g.gain.linearRampToValueAtTime(0.2,t+0.01);
       g.gain.setValueAtTime(0.2,t+dur*0.75);
       g.gain.linearRampToValueAtTime(0,t+dur+0.09);
-      o1.connect(fl); o2.connect(fl);
+      o1.connect(ws); o2.connect(ws); ws.connect(fl);
       o1.start(t); o2.start(t); lfo.start(t);
       const e=t+dur+0.15; o1.stop(e); o2.stop(e); lfo.stop(e);
     }

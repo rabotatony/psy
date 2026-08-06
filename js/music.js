@@ -132,11 +132,11 @@ export const seq={
         for(let k=0;k<4;k++){
           const d2=Math.min(st.scaleArr.length-1,deg+k*2);
           const midi=sc.root+24+st.scaleArr[d2];
-          eng.lead(tt+k*sdL,midi,sdL*0.5,sc.leadType);
+          eng.lead(tt+k*sdL,midi,sdL*0.5,sc.leadType,(s%4===0)?1:0.8);
         }
       }else{
         const midi=sc.root+24+st.scaleArr[deg];
-        eng.lead(tt,midi,(60/st.bpm/4)*(sc.leadType==='acid'?1.05:0.92),sc.leadType);
+        eng.lead(tt,midi,(60/st.bpm/4)*(sc.leadType==='acid'?1.05:0.92),sc.leadType,(s%4===0)?1:0.8);
       }
     }
     if(s===0) this.barLocal++;
@@ -195,11 +195,11 @@ export async function bounce(bars,opts){
           for(let k=0;k<4;k++){
             const d2=Math.min(st.scaleArr.length-1,deg+k*2);
             const midi=sc.root+24+st.scaleArr[d2];
-            o.lead(tt+k*sd,midi,sd*0.5,sc.leadType);
+            o.lead(tt+k*sd,midi,sd*0.5,sc.leadType,(s%4===0)?1:0.8);
           }
         }else{
           const midi=sc.root+24+st.scaleArr[deg];
-          o.lead(tt,midi,sd*(sc.leadType==='acid'?1.05:0.92),sc.leadType);
+          o.lead(tt,midi,sd*(sc.leadType==='acid'?1.05:0.92),sc.leadType,(s%4===0)?1:0.8);
         }
       }
     }

@@ -20,6 +20,20 @@ function toast(msg,fatal){
   toastT=setTimeout(()=>el.classList.remove('show'),fatal?5000:2200);
 }
 window.addEventListener('error',e=>toast('שגיאה: '+(e.message||'unknown'),true));
+function normalizeBuffer(buf,target){
+  let peak=0;
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i++){const v=Math.abs(d[i]); if(v>peak)peak=v;}
+  }
+  if(peak<0.001) return buf;
+  const gg=target/peak;
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i++) d[i]*=gg;
+  }
+  return buf;
+}
 if(location.protocol==='file:'){
   setTimeout(()=>toast('קבצים לא רצים ישירות! הרץ בתיקייה: python3 -m http.server',true),600);
 }
@@ -368,7 +382,7 @@ safeOn('#btnExport','click',async()=>{
   const btn=$('#btnExport'); if(btn){btn.classList.add('busy'); btn.textContent='...';}
   toast('מייצא WAV ('+lop.recSel+' תיבות)...');
   try{
-    const buf=await bounce(lop.recSel);
+    const buf=normalizeBuffer(await bounce(lop.recSel),0.97);
     downloadBlob(bufferToWav(buf),'psyweave-'+state.bpm+'bpm-'+lop.recSel+'bars.wav');
     toast('קובץ WAV מוכן ⬇');
   }catch(e){toast('שגיאת ייצוא: '+(e&&e.message?e.message:'unknown'),true);}
@@ -392,7 +406,7 @@ safeOn('#btnStems','click',async()=>{
   try{
     for(const j of jobs){
       toast('מייצא STEM: '+j[0]+'...');
-      const buf=await bounce(lop.recSel,j[1]);
+      const buf=normalizeBuffer(await bounce(lop.recSel,j[1]),0.95);
       downloadBlob(bufferToWav(buf),'psyweave-stem-'+j[0]+'-'+state.bpm+'bpm.wav');
     }
     toast('כל ה-STEMS ירדו ⬇');
@@ -462,7 +476,7 @@ safeOn('#btnLearn','click',()=>{
 
 window.addEventListener('keydown',e=>{
   if(e.code==='Space'){e.preventDefault(); const pb=$('#btnPlay'); if(pb) pb.click();}
-  else if(e.key>='1'&&e.key<='6') applyScene(parseInt(e.key,10)-1);
+  else if(e.key>='1'&&e.key<='7') applyScene(parseInt(e.key,10)-1);
   else if(e.key==='r'||e.key==='R'||e.key==='ר'){const el=$('#btnRec'); if(el) el.click();}
   else if(e.key==='m'||e.key==='M'||e.key==='צ'){const el=$('#aMut'); if(el) el.click();}
   else if(e.key==='d'||e.key==='D'){const el=$('#aDrop'); if(el) el.click();}
