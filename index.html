@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#05060a">
+<title>PSYWEAVE · מנוע פסיי-טראנס חי</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron/500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron/800.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/heebo/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/heebo/700.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">
+      <b>PSYWEAVE</b>
+      <span>מנוע פסיי-טראנס · לופר חי · Song Mode · STEMS · v6</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="btnPerform" type="button">PERF</button>
+      <button id="btnPlay" type="button">▶</button>
+    </div>
+  </header>
+
+  <canvas id="viz"></canvas>
+
+  <div class="panel transport hideable" dir="ltr">
+    <div class="bpmBox"><span class="bpmVal" id="bpmVal">142</span><span class="bpmLbl">BPM</span></div>
+    <input type="range" id="bpmSlider" min="120" max="160" value="142">
+    <button id="btnTap" type="button">TAP</button>
+    <button id="btnAuto" type="button">AUTO ▸ ON</button>
+  </div>
+  <div class="chiprow hideable" dir="ltr">
+    <span id="secChip">AUTO ▸ INTRO 1/8</span>
+    <span id="barLbl">BAR 1</span>
+  </div>
+
+  <div class="panel hideable">
+    <div class="ptitle"><h2>SONG MODE</h2><small>הקש על סקציה כדי להחליף סוג · פועל במצב AUTO</small></div>
+    <div class="songchain" id="songChain" dir="ltr"></div>
+    <div style="margin-top:8px"><button id="btnSongReset" type="button" class="lanebtn">RESET SONG</button></div>
+  </div>
+
+  <div class="panel hideable">
+    <div class="ptitle"><h2>SCENES</h2><small>6 עולמות · BPM אוטומטי</small></div>
+    <div class="scenes" id="scenes"></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><h2>MACROS</h2><small>סיבוב = קסם · MIDI LEARN</small></div>
+    <div class="knobs" dir="ltr">
+      <div class="knobwrap"><div class="knob" id="kFilter"><div class="cap"></div></div><span class="klabel">FILTER</span><span class="kval"></span></div>
+      <div class="knobwrap"><div class="knob" id="kSpace"><div class="cap"></div></div><span class="klabel">SPACE</span><span class="kval"></span></div>
+      <div class="knobwrap"><div class="knob" id="kDrive"><div class="cap"></div></div><span class="klabel">DRIVE</span><span class="kval"></span></div>
+      <div class="knobwrap"><div class="knob" id="kSwing"><div class="cap"></div></div><span class="klabel">SWING</span><span class="kval"></span></div>
+    </div>
+    <div class="xy" id="xy" dir="ltr"><div id="xydot"></div><span class="xytag">MORPH XY · X=תנועה · Y=רזוננס/פידבק</span></div>
+  </div>
+
+  <div class="panel hideable">
+    <div class="ptitle"><h2>SEQUENCER</h2><div><button id="btnUndo" type="button" class="lanebtn">UNDO</button></div></div>
+    <div id="grid"></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><h2>FX PERFORMANCE</h2><small>כפתורי במה</small></div>
+    <div class="actions">
+      <button class="act" id="aRise" type="button"><b>RISE</b><small>עלייה</small></button>
+      <button class="act" id="aDrop" type="button"><b>DROP</b><small>דרופ</small></button>
+      <button class="act" id="aFill" type="button"><b>FILL</b><small>פיל</small></button>
+      <button class="act" id="aZap" type="button"><b>ZAP</b><small>לייזר</small></button>
+      <button class="act" id="aMut" type="button"><b>MUTATE</b><small>מוטציה</small></button>
+      <button class="act" id="aArp" type="button"><b>ARP</b><small>ארפג'</small></button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><h2>LOOPER</h2><small>הקלטה חיה · quantize · פיצוי טמפו</small></div>
+    <div class="looptop">
+      <button id="btnRec" type="button">REC</button>
+      <div class="seg" dir="ltr">
+        <button data-bars="1">1</button><button data-bars="2" class="active">2</button><button data-bars="4">4</button>
+      </div>
+      <button id="btnMic" type="button">🎤 MIC</button>
+    </div>
+    <div class="slots" id="slots"></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><h2>PROJECT</h2><small>ייצוא · STEMS · גיבוי · MIDI</small></div>
+    <div class="projrow" dir="ltr">
+      <button id="btnExport" type="button">⬇ WAV</button>
+      <button id="btnStems" type="button">STEMS</button>
+      <button id="btnSave" type="button">SAVE</button>
+      <button id="btnLoad" type="button">LOAD</button>
+      <button id="btnMidi" type="button">MIDI</button>
+      <button id="btnLearn" type="button">LEARN</button>
+      <input type="file" id="fileInput" accept=".json,application/json" hidden>
+    </div>
+  </div>
+
+  <footer class="hideable">טיפ: ערוך את שרשרת ה-SONG MODE ואז לחץ PLAY — הטראק ינגן בדיוק את המבנה שבנית.<br>STEMS מייצר קבצי WAV נפרדים לכל חלק — מוכן ל-DAW.</footer>
+</div>
+<div id="toast"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
