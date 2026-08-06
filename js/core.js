@@ -70,3 +70,4 @@ export const LANES=[
 ];
 
 export const LS_KEY='psyweave3';
+export const STYLE_ORDER=[2,4,0,1,3,6,5]; // PROG,GOA,FULL-ON,DARK,ACID,FOLD,NIGHT
