@@ -1,0 +1,15 @@
+{
+  "name": "PSYWEAVE — Infinite Psytrance Instrument",
+  "short_name": "PSYWEAVE",
+  "description": "Genre-native psychedelic music instrument: auto-arranged psytrance, live looper, infinite variation. Perform, don't program.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05060a",
+  "theme_color": "#05060a",
+  "icons": [
+    {"src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
