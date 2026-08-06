@@ -1,4 +1,4 @@
-import {SCENES,ARRANGEMENT,SECTIONS_BY_NAME,DEFAULT_SONG} from './core.js';
+import {SCENES,ARRANGEMENT,SECTIONS_BY_NAME,DEFAULT_SONG,STYLE_ORDER} from './core.js';
 import {eng,EngineProto} from './engine.js';
 import {lop} from './looper.js';
 
@@ -28,6 +28,28 @@ export function genMotif(seed,scale){
     return d;
   });
   return {a:A,b:B};
+}
+
+
+// v9: continuous style blending across the psychedelic spectrum
+export function blendedScene(st){
+  const n=STYLE_ORDER.length;
+  const pos=Math.max(0,Math.min(1,st.stylePos===undefined?0:st.stylePos));
+  const f=pos*(n-1);
+  const i=Math.min(n-2,Math.floor(f));
+  const t=f-i;
+  const A=SCENES[STYLE_ORDER[i]],B=SCENES[STYLE_ORDER[i+1]];
+  const near=t<0.5?A:B;
+  return {
+    name:near.name,heb:near.heb,leadType:near.leadType,pad:near.pad,bassLong:near.bassLong,
+    root:near.root,scale:near.scale,chord:near.chord,
+    kick:near.kick,bass:near.bass,bassOct:near.bassOct,hat:near.hat,
+    open:near.open,clap:near.clap,perc:near.perc,gate:near.gate,
+    percFreq:A.percFreq+(B.percFreq-A.percFreq)*t,
+    hue:A.hue+(B.hue-A.hue)*t,
+    bpm:Math.round(A.bpm+(B.bpm-A.bpm)*t),
+    seed:near.seed,
+  };
 }
 
 function songAt(bar,st){
@@ -101,7 +123,7 @@ export const seq={
   },
 
   step(s,t){
-    const st=this.st,sc=SCENES[st.scene],P=st.patterns;
+    const st=this.st,sc=blendedScene(st),P=st.patterns;
     const sw=s%2===1? st.swing*(60/st.bpm/4)*0.33 : 0;
     const tt=t+sw;
     let sec;
@@ -120,7 +142,7 @@ export const seq={
     }
     if(sec.kick&&P.kick[s]) eng.kick(tt,s%4===0?1:0.92);
     if(sec.bass&&P.bass[s]) eng.bass(tt,sc.root+(sc.bassOct[s]||0),sc.bassLong);
-    if(sec.hat&&P.hat[s]) eng.hat(tt,false,(s%4===0?0.16:0.11)*(1+((s*37)%5)*0.03),s%2?0.18:-0.18);
+    if(sec.hat&&P.hat[s]) eng.hat(tt,false,(s%4===0?0.16:0.11)*(1+((s*37)%5)*0.03*(1+st.swing*3)),s%2?0.18:-0.18);
     if(sec.hat&&sc.open.includes(s)) eng.hat(tt,true,0.12,0);
     if(sec.hat&&sc.clap.includes(s)) eng.clap(tt,1,0);
     if(sec.perc&&P.perc&&P.perc[s]) eng.perc(tt,sc.percFreq,s%4<2?-0.35:0.35);
@@ -160,7 +182,7 @@ export async function bounce(bars,opts){
   const off=new OAC(2,Math.ceil((bars*bd+1)*sr),sr);
   const o=Object.create(EngineProto);
   o.init(off); o.bind(st); o.applyMacros();
-  const sc=SCENES[st.scene],P=st.patterns;
+  const sc=blendedScene(st),P=st.patterns;
   let secLast=null;
   for(let bar=0;bar<bars;bar++){
     const tBar=bar*bd;
@@ -183,7 +205,7 @@ export async function bounce(bars,opts){
       if(fl.kick&&sec.kick&&P.kick[s]) o.kick(tt,s%4===0?1:0.92);
       if(fl.bass&&sec.bass&&P.bass[s]) o.bass(tt,sc.root+(sc.bassOct[s]||0),sc.bassLong);
       if(fl.hat&&sec.hat){
-        if(P.hat[s]) o.hat(tt,false,(s%4===0?0.16:0.11)*(1+((s*37)%5)*0.03),s%2?0.18:-0.18);
+        if(P.hat[s]) o.hat(tt,false,(s%4===0?0.16:0.11)*(1+((s*37)%5)*0.03*(1+st.swing*3)),s%2?0.18:-0.18);
         if(sc.open.includes(s)) o.hat(tt,true,0.12,0);
         if(sc.clap.includes(s)) o.clap(tt,1,0);
       }
