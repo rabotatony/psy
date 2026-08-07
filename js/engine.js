@@ -52,17 +52,17 @@ const EngineProto={
     this.fb=c.createGain(); this.fb2=c.createGain();
     this.panL=this.mkPan(-0.65); this.panR=this.mkPan(0.65);
     this.delaySend.connect(this.delayL);
-    this.delayL.connect(this.fL); this.fL.connect(this.hpL);
+    this.hpDL=c.createBiquadFilter(); this.hpDL.type='highpass'; this.hpDL.frequency.value=180; this.delayL.connect(this.hpDL); this.hpDL.connect(this.fL); this.fL.connect(this.hpL);
     this.hpL.connect(this.panL); this.panL.connect(this.sum);
     this.hpL.connect(this.fb); this.fb.connect(this.delayR);
-    this.delayR.connect(this.fR); this.fR.connect(this.hpR);
+    this.hpDR=c.createBiquadFilter(); this.hpDR.type='highpass'; this.hpDR.frequency.value=180; this.delayR.connect(this.hpDR); this.hpDR.connect(this.fR); this.fR.connect(this.hpR);
     this.hpR.connect(this.panR); this.panR.connect(this.sum);
     this.hpR.connect(this.fb2); this.fb2.connect(this.delayL);
 
     this.revSend=c.createGain();
     this.conv=c.createConvolver(); this.conv.buffer=this.makeImpulse(1.8,4.2);
     this.rRet=c.createGain(); this.rRet.gain.value=0.6;
-    this.revSend.connect(this.conv); this.conv.connect(this.rRet); this.rRet.connect(this.sum);
+    this.revPre=c.createDelay(0.06); this.revPre.delayTime.value=0.028; this.revSend.connect(this.revPre); this.revPre.connect(this.conv); this.conv.connect(this.rRet); this.rRet.connect(this.sum);
 
     this.wideIn=c.createGain();
     this.wideDry=c.createGain(); this.wideDry.gain.value=1;
@@ -109,7 +109,7 @@ const EngineProto={
     return b;
   },
   driveCurve(a){
-    const n=257,c=new Float32Array(n),k=a*10;
+    const n=257,c=new Float32Array(n),k=a*4;
     for(let i=0;i<n;i++){const x=i/(n-1)*2-1; c[i]=k<0.02?x:Math.tanh(k*x)/Math.tanh(k);}
     return c;
   },
@@ -153,12 +153,12 @@ const EngineProto={
   setSectionFilter(f){this.arrFilt=f; this.applyMacros(1.4);},
 
   // v7: deeper, smoother pump
-  duckHit(t,depth=0.22){
+  duckHit(t,depth=0.3){
     const g=this.duck.gain;
     g.cancelScheduledValues(t);
     g.setValueAtTime(Math.max(0.05,g.value),t);
-    g.linearRampToValueAtTime(depth,t+0.008);
-    g.exponentialRampToValueAtTime(1,t+0.35);
+    g.linearRampToValueAtTime(depth,t+0.006);
+    g.exponentialRampToValueAtTime(1,t+0.28);
   },
 
   mkSend(amt){
@@ -175,35 +175,35 @@ const EngineProto={
     const o=c.createOscillator(),g=c.createGain();
     o.type='sine';
     o.frequency.setValueAtTime(165,t);
-    o.frequency.exponentialRampToValueAtTime(43,t+0.07);
+    o.frequency.exponentialRampToValueAtTime(50,t+0.035);
     g.gain.setValueAtTime(1.05*acc,t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
     o.connect(g); g.connect(this.sum);
     o.start(t); o.stop(t+0.3);
     const o2=c.createOscillator(),g2=c.createGain();
     o2.type='triangle';
-    o2.frequency.setValueAtTime(320,t);
-    o2.frequency.exponentialRampToValueAtTime(58,t+0.03);
-    g2.gain.setValueAtTime(0.5*acc,t);
+    o2.frequency.setValueAtTime(300,t);
+    o2.frequency.exponentialRampToValueAtTime(60,t+0.025);
+    g2.gain.setValueAtTime(0.45*acc,t);
     g2.gain.exponentialRampToValueAtTime(0.001,t+0.05);
     o2.connect(g2); g2.connect(this.sum);
     o2.start(t); o2.stop(t+0.06);
     const s=c.createBufferSource(); s.buffer=this.noise;
-    const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3500;
+    const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=4500;
     const cg=c.createGain();
     cg.gain.setValueAtTime(0.3*acc,t);
-    cg.gain.exponentialRampToValueAtTime(0.001,t+0.02);
+    cg.gain.exponentialRampToValueAtTime(0.001,t+0.012);
     s.connect(hp); hp.connect(cg); cg.connect(this.sum);
     s.start(t); s.stop(t+0.03);
-    this.duckHit(t,0.22);
+    this.duckHit(t,0.3);
   },
 
   hat(t,open,vol=0.13,pan=0){
     const c=this.ctx,s=c.createBufferSource(); s.buffer=this.noise; s.loop=true;
-    const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=open?7000:8200;
+    const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=open?7000:8600;
     const g=c.createGain();
     g.gain.setValueAtTime(vol,t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+(open?0.24:0.045));
+    g.gain.exponentialRampToValueAtTime(0.001,t+(open?0.2:0.045));
     const p=this.mkPan(pan);
     s.connect(hp); hp.connect(g); g.connect(p); p.connect(this.sum);
     s.start(t); s.stop(t+0.3);
@@ -261,14 +261,14 @@ const EngineProto={
     const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=1+m.morphY*9;
     const peak=Math.min(9000,260+m.filter*4300+800);
     fl.frequency.setValueAtTime(peak,t);
-    fl.frequency.exponentialRampToValueAtTime(Math.max(130,peak*0.22),t+dur);
+    fl.frequency.exponentialRampToValueAtTime(Math.max(130,peak*0.25),t+dur);
     const bs=c.createWaveShaper(); bs.curve=this.bassCurve(); bs.oversample='4x';
     const g=c.createGain();
     g.gain.setValueAtTime(0,t);
     g.gain.linearRampToValueAtTime(0.4,t+0.006);
     g.gain.setValueAtTime(0.4,t+dur*0.7);
     g.gain.linearRampToValueAtTime(0,t+dur);
-    const sg=c.createGain(); sg.gain.value=0.5;
+    const sg=c.createGain(); sg.gain.value=0.6;
     o1.connect(fl); o2.connect(fl); sub.connect(sg); sg.connect(fl);
     fl.connect(bs); bs.connect(g); g.connect(this.duck);
     o1.start(t); o2.start(t); sub.start(t);
@@ -364,6 +364,9 @@ const EngineProto={
       o1.frequency.value=f; o2.frequency.value=f;
       o1.detune.value=-6+(Math.random()*8-4); o2.detune.value=6+(Math.random()*8-4);
       const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+      const plfo=c.createOscillator(),plg=c.createGain();
+      plfo.type='sine'; plfo.frequency.value=0.06+Math.random()*0.04; plg.gain.value=350;
+      plfo.connect(plg); plg.connect(lp.frequency);
       const g=c.createGain();
       g.gain.setValueAtTime(0,t);
       g.gain.linearRampToValueAtTime(0.028,t+0.7);
@@ -373,8 +376,8 @@ const EngineProto={
       o1.connect(lp); o2.connect(lp); lp.connect(g);
       g.connect(rg); rg.connect(this.revSend);
       g.connect(this.duck);
-      o1.start(t); o2.start(t);
-      const e=t+dur+0.1; o1.stop(e); o2.stop(e);
+      o1.start(t); o2.start(t); plfo.start(t);
+      const e=t+dur+0.1; o1.stop(e); o2.stop(e); plfo.stop(e);
     });
   },
 
