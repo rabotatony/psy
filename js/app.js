@@ -744,7 +744,7 @@ applyScene(state.scene,{init:true});
 buildSong();
 lop.render();
 renderXY();
-bindKnob($('#kFilter'),'filter',v=>{state.macros.drive=clamp(v*0.42);});
+bindKnob($('#kFilter'),'filter',v=>{state.macros.drive=clamp(v*0.3);});
 bindKnob($('#kSpace'),'space');
 bindKnob($('#kDrive'),'morphX');
 bindKnob($('#kSwing'),'swing');
