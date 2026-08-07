@@ -1,4 +1,4 @@
-import {SCENES,ARRANGEMENT,SECTIONS_BY_NAME,DEFAULT_SONG,STYLE_ORDER} from './core.js';
+import {SCENES,ARRANGEMENT,SECTIONS_BY_NAME,DEFAULT_SONG,STYLE_ORDER,mtof} from './core.js';
 import {eng,EngineProto} from './engine.js';
 import {lop} from './looper.js';
 
@@ -31,25 +31,64 @@ export function genMotif(seed,scale){
 }
 
 
-// v9: continuous style blending across the psychedelic spectrum
+// v10: 2D style field — bilinear blend between PROG/GOA/DARK/FULL-ON corners
+const CORNERS=[2,4,1,0];
+function clamp01(v){return Math.max(0,Math.min(1,v));}
 export function blendedScene(st){
-  const n=STYLE_ORDER.length;
-  const pos=Math.max(0,Math.min(1,st.stylePos===undefined?0:st.stylePos));
-  const f=pos*(n-1);
-  const i=Math.min(n-2,Math.floor(f));
-  const t=f-i;
-  const A=SCENES[STYLE_ORDER[i]],B=SCENES[STYLE_ORDER[i+1]];
-  const near=t<0.5?A:B;
-  return {
-    name:near.name,heb:near.heb,leadType:near.leadType,pad:near.pad,bassLong:near.bassLong,
-    root:near.root,scale:near.scale,chord:near.chord,
-    kick:near.kick,bass:near.bass,bassOct:near.bassOct,hat:near.hat,
-    open:near.open,clap:near.clap,perc:near.perc,gate:near.gate,
-    percFreq:A.percFreq+(B.percFreq-A.percFreq)*t,
-    hue:A.hue+(B.hue-A.hue)*t,
-    bpm:Math.round(A.bpm+(B.bpm-A.bpm)*t),
-    seed:near.seed,
-  };
+  if(st.styleOverride!==undefined&&st.styleOverride!==null){
+    const sc=SCENES[st.styleOverride];
+    return {nearIdx:st.styleOverride,name:sc.name,heb:sc.heb,leadType:sc.leadType,pad:sc.pad,bassLong:sc.bassLong,
+      root:sc.root,scale:sc.scale,chord:sc.chord,kick:sc.kick,bass:sc.bass,bassOct:sc.bassOct,hat:sc.hat,
+      open:sc.open,clap:sc.clap,perc:sc.perc,gate:sc.gate,percFreq:sc.percFreq,hue:sc.hue,bpm:sc.bpm,seed:sc.seed};
+  }
+  const x=clamp01(st.styleX===undefined?0.5:st.styleX),y=clamp01(st.styleY===undefined?0.5:st.styleY);
+  const C=CORNERS.map(i=>SCENES[i]);
+  const w=[(1-x)*(1-y),x*(1-y),(1-x)*y,x*y];
+  let mi=0; for(let k=1;k<4;k++) if(w[k]>w[mi]) mi=k;
+  const near=C[mi];
+  let bpm=0,hue=0,pf=0;
+  for(let k=0;k<4;k++){bpm+=w[k]*C[k].bpm; hue+=w[k]*C[k].hue; pf+=w[k]*C[k].percFreq;}
+  return {nearIdx:CORNERS[mi],name:near.name,heb:near.heb,leadType:near.leadType,pad:near.pad,bassLong:near.bassLong,
+    root:near.root,scale:near.scale,chord:near.chord,kick:near.kick,bass:near.bass,bassOct:near.bassOct,hat:near.hat,
+    open:near.open,clap:near.clap,perc:near.perc,gate:near.gate,percFreq:pf,hue:hue,bpm:Math.round(bpm),seed:near.seed};
+}
+
+// v10: one musical scheduler for live play + offline bounce (ENERGY & CHAOS aware)
+export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
+  fl=fl||{kick:true,bass:true,hat:true,lead:true,pad:true,perc:true,loops:true};
+  const en=st.macros?clamp01(st.macros.filter):0.85;
+  const ch=clamp01(st.swing||0);
+  if(fl.kick&&sec.kick&&P.kick[s]) E.kick(tt,s%4===0?1:0.92);
+  if(fl.bass&&sec.bass&&P.bass[s]&&Math.random()>ch*0.1){
+    E.bass(tt,sc.root+(sc.bassOct[s]||0),sc.bassLong);
+  }
+  if(fl.hat&&sec.hat){
+    const keep=s%2===0||Math.random()<0.3+en*0.7;
+    if(P.hat[s]&&keep) E.hat(tt,false,(0.09+en*0.08)*(s%4===0?1.25:1)*(1+((s*37)%5)*0.03*(1+ch*3)),s%2?0.18:-0.18);
+    if(sc.open.includes(s)&&en>0.35) E.hat(tt,true,0.09+en*0.05,0);
+    if(sc.clap.includes(s)) E.clap(tt,1,0);
+  }
+  if(fl.perc&&sec.perc&&P.perc&&P.perc[s]&&en>0.45) E.perc(tt,sc.percFreq,s%4<2?-0.35:0.35);
+  if(fl.hat&&ch>0&&Math.random()<ch*0.03){
+    const gf=mtof(sc.root+24+st.scaleArr[Math.floor(Math.random()*st.scaleArr.length)]);
+    E.perc(tt,gf,Math.random()*0.8-0.4);
+  }
+  if(fl.lead&&sec.lead&&P.lead[s]){
+    const mot=((bar>>1)%2===0)?motifs.a:motifs.b;
+    const deg=mot[s];
+    const oct=en>0.8?12:0;
+    if(st.arp){
+      const sdL=60/st.bpm/4;
+      for(let k=0;k<4;k++){
+        const d2=Math.min(st.scaleArr.length-1,deg+k*2);
+        const midi=sc.root+24+st.scaleArr[d2]+oct;
+        E.lead(tt+k*sdL,midi,sdL*0.5,sc.leadType,(s%4===0)?1:0.8);
+      }
+    }else{
+      const midi=sc.root+24+st.scaleArr[deg]+oct;
+      E.lead(tt,midi,(60/st.bpm/4)*(sc.leadType==='acid'?1.05:0.92),sc.leadType,(s%4===0)?1:0.8);
+    }
+  }
 }
 
 function songAt(bar,st){
@@ -140,27 +179,7 @@ export const seq={
       this.uiQ.push({t:tt,s});
       sec=this.curSec||{kick:1,bass:1,hat:1,lead:1,pad:1,perc:1};
     }
-    if(sec.kick&&P.kick[s]) eng.kick(tt,s%4===0?1:0.92);
-    if(sec.bass&&P.bass[s]) eng.bass(tt,sc.root+(sc.bassOct[s]||0),sc.bassLong);
-    if(sec.hat&&P.hat[s]) eng.hat(tt,false,(s%4===0?0.16:0.11)*(1+((s*37)%5)*0.03*(1+st.swing*3)),s%2?0.18:-0.18);
-    if(sec.hat&&sc.open.includes(s)) eng.hat(tt,true,0.12,0);
-    if(sec.hat&&sc.clap.includes(s)) eng.clap(tt,1,0);
-    if(sec.perc&&P.perc&&P.perc[s]) eng.perc(tt,sc.percFreq,s%4<2?-0.35:0.35);
-    if(sec.lead&&P.lead[s]){
-      const mot=((this.barLocal>>1)%2===0)?this.motif.a:this.motif.b;
-      const deg=mot[s];
-      if(st.arp){
-        const sdL=60/st.bpm/4;
-        for(let k=0;k<4;k++){
-          const d2=Math.min(st.scaleArr.length-1,deg+k*2);
-          const midi=sc.root+24+st.scaleArr[d2];
-          eng.lead(tt+k*sdL,midi,sdL*0.5,sc.leadType,(s%4===0)?1:0.8);
-        }
-      }else{
-        const midi=sc.root+24+st.scaleArr[deg];
-        eng.lead(tt,midi,(60/st.bpm/4)*(sc.leadType==='acid'?1.05:0.92),sc.leadType,(s%4===0)?1:0.8);
-      }
-    }
+    scheduleNotes(eng,st,sc,sec,P,s,tt,this.barLocal,null,this.motif);
     if(s===0) this.barLocal++;
   },
 
@@ -202,28 +221,7 @@ export async function bounce(bars,opts){
     for(let s=0;s<16;s++){
       const sw=(s%2===1)? st.swing*sd*0.33 : 0;
       const tt=tBar+s*sd+sw;
-      if(fl.kick&&sec.kick&&P.kick[s]) o.kick(tt,s%4===0?1:0.92);
-      if(fl.bass&&sec.bass&&P.bass[s]) o.bass(tt,sc.root+(sc.bassOct[s]||0),sc.bassLong);
-      if(fl.hat&&sec.hat){
-        if(P.hat[s]) o.hat(tt,false,(s%4===0?0.16:0.11)*(1+((s*37)%5)*0.03*(1+st.swing*3)),s%2?0.18:-0.18);
-        if(sc.open.includes(s)) o.hat(tt,true,0.12,0);
-        if(sc.clap.includes(s)) o.clap(tt,1,0);
-      }
-      if(fl.perc&&sec.perc&&P.perc&&P.perc[s]) o.perc(tt,sc.percFreq,s%4<2?-0.35:0.35);
-      if(fl.lead&&sec.lead&&P.lead[s]){
-        const mot=((bar>>1)%2===0)?seq.motif.a:seq.motif.b;
-        const deg=mot[s];
-        if(st.arp){
-          for(let k=0;k<4;k++){
-            const d2=Math.min(st.scaleArr.length-1,deg+k*2);
-            const midi=sc.root+24+st.scaleArr[d2];
-            o.lead(tt+k*sd,midi,sd*0.5,sc.leadType,(s%4===0)?1:0.8);
-          }
-        }else{
-          const midi=sc.root+24+st.scaleArr[deg];
-          o.lead(tt,midi,sd*(sc.leadType==='acid'?1.05:0.92),sc.leadType,(s%4===0)?1:0.8);
-        }
-      }
+      scheduleNotes(o,st,sc,sec,P,s,tt,bar,fl,seq.motif);
     }
   }
   if(fl.loops){
