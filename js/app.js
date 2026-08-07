@@ -813,6 +813,23 @@ if('serviceWorker' in navigator){
   });
 }
 
+// v31: playable improvisation pads — play scale notes on tap (playability/improvisation)
+function playImprovNote(degIdx){
+  if(!eng.ctx) return;
+  const sc=SCENES[state.scene];
+  const scale=state.scaleArr;
+  const deg=scale[degIdx%scale.length];
+  const midi=sc.root+24+deg;
+  const dur=(60/state.bpm/4)*2;
+  eng.lead(eng.ctx.currentTime,midi,dur,sc.leadType,0.8);
+}
+document.querySelectorAll('.ipad').forEach(p=>{
+  p.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    playImprovNote(parseInt(p.dataset.deg,10));
+  });
+});
+
 /* init */
 loadState();
 eng.bind(state);
