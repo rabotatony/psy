@@ -323,6 +323,21 @@ const EngineProto={
       ws.connect(fl);
       o1.start(t); o2.start(t); o3.start(t);
       const e=t+dur+0.12; o1.stop(e); o2.stop(e); o3.stop(e);
+    }else if(type==='pluck'){
+      const o=c.createOscillator(); o.type='sawtooth';
+      o.frequency.value=f;
+      const flp=c.createBiquadFilter(); flp.type='lowpass'; flp.Q.value=2+vs.lead.fold*6;
+      const pk=Math.min(8000,(300+m.filter*5000)*vs.lead.bright);
+      flp.frequency.setValueAtTime(pk,t);
+      flp.frequency.exponentialRampToValueAtTime(Math.max(200,pk*0.15),t+dur*0.7);
+      const g2=c.createGain();
+      g2.gain.setValueAtTime(0,t);
+      g2.gain.linearRampToValueAtTime(0.32*vol,t+0.004);
+      g2.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      o.connect(flp); flp.connect(g2); g2.connect(this.sum);
+      const rs=this.mkSend(0.35); g2.connect(rs[0]); g2.connect(rs[1]);
+      o.start(t); o.stop(t+dur+0.05);
+      return;
     }else{
       // v13: 7-voice supersaw with continuous per-voice drift
       const wg=c.createGain(); wg.gain.value=0.22;
