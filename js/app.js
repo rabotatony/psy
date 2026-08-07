@@ -215,25 +215,28 @@ function cycleSong(i){
   state.song[i]=SECTION_NAMES[(idx+1)%SECTION_NAMES.length];
   resetArrange(); buildSong(); save();
 }
-const sf=$('#styleField');
-if(sf){
-  let dragF=false;
-  const lightF=e=>{
-    const r=sf.getBoundingClientRect();
-    state.styleX=clamp((e.clientX-r.left)/r.width);
-    state.styleY=clamp(1-(e.clientY-r.top)/r.height);
-    const sc=blendedScene(state);
-    document.documentElement.style.setProperty('--hue',Math.round(sc.hue));
-    setBpm(sc.bpm);
-    const dot=$('#styleDot');
-    if(dot){dot.style.left=(state.styleX*100)+'%';dot.style.top=((1-state.styleY)*100)+'%';}
-    const sn=$('#styleName'); if(sn) sn.textContent=sc.heb+' · '+sc.bpm+' BPM';
-  };
-  sf.addEventListener('pointerdown',e=>{dragF=true; sf.setPointerCapture(e.pointerId); lightF(e); e.preventDefault();});
-  sf.addEventListener('pointermove',e=>{if(dragF)lightF(e);});
-  sf.addEventListener('pointerup',()=>{if(dragF){dragF=false; applyStyle(false);}});
-  sf.addEventListener('pointercancel',()=>{dragF=false;});
+// v31: play pads — playable improvisation pads (play notes from current scale)
+function buildPlayPads(){
+  const wrap=$('#playPads'); if(!wrap) return;
+  wrap.innerHTML='';
+  const sc=SCENES[state.scene];
+  const scale=SCALES[sc.scale];
+  const nPads=8;
+  for(let i=0;i<nPads;i++){
+    const p=document.createElement('button'); p.type='button'; p.className='playpad';
+    p.textContent=String(i+1);
+    const deg=scale[Math.floor(i/nPads*scale.length)];
+    p.addEventListener('pointerdown',e=>{
+      e.preventDefault();
+      if(!eng.ctx){toast('קודם לחץ PLAY'); return;}
+      const midi=sc.root+24+deg;
+      eng.lead(eng.ctx.currentTime,midi,(60/state.bpm/4)*1.5,sc.leadType,1);
+      p.classList.add('hit'); setTimeout(()=>p.classList.remove('hit'),150);
+    });
+    wrap.appendChild(p);
+  }
 }
+buildPlayPads();
 safeOn('#btnSongReset','click',()=>{
   state.song=DEFAULT_SONG.slice();
   resetArrange(); buildSong(); save();
