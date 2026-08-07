@@ -228,10 +228,9 @@ safeOn('#btnSongReset','click',()=>{
   toast('שרשרת הסקציות אופסה');
 });
 
-function percArr(sc){const a=new Array(16).fill(0); sc.perc.forEach(i=>a[i]=1); return a;}
 function defaultsFor(i){
   const sc=SCENES[i];
-  return {muts:0,patterns:{kick:[...sc.kick],bass:[...sc.bass],hat:[...sc.hat],lead:[...sc.gate],perc:percArr(sc)}};
+  return {muts:0,patterns:{kick:[...sc.kick],bass:[...sc.bass],hat:[...sc.hat],lead:[...sc.gate],perc:[...sc.perc]}};
 }
 function currentEdit(){
   if(!state.edits[state.scene]) state.edits[state.scene]=defaultsFor(state.scene);
@@ -304,7 +303,7 @@ let colEls=[],phCol=-1;
 function rebuildGrid(){
   if(!gridEl) return;
   gridEl.innerHTML='';
-  colEls=Array.from({length:16},()=>[]); phCol=-1;
+  colEls=Array.from({length:32},()=>[]); phCol=-1;
   LANES.forEach(lane=>{
     const row=document.createElement('div'); row.className='lane';
     const lab=document.createElement('div'); lab.className='lane-label';
@@ -315,9 +314,9 @@ function rebuildGrid(){
     const span=document.createElement('span'); span.textContent=lane.heb;
     lab.appendChild(rnd); lab.appendChild(clr); lab.appendChild(span);
     row.appendChild(lab);
-    for(let i=0;i<16;i++){
+    for(let i=0;i<32;i++){
       const p=document.createElement('button'); p.type='button';
-      p.className='pad'+(state.patterns[lane.id][i]?' on':'')+(i%4===0&&i>0?' g4':'');
+      p.className='pad'+(state.patterns[lane.id][i]?' on':'')+(i%8===0&&i>0?' g8':'');
       p.addEventListener('pointerdown',e=>{
         e.preventDefault();
         pushUndo();
@@ -478,39 +477,41 @@ safeOn('#aMut','click',()=>{
 /* v11 smart play */
 function playLick(kind){
   if(!eng.ctx){toast('קודם לחץ PLAY'); return;}
-  const t0=eng.ctx.currentTime+0.03;
-  const st=state,sc=blendedScene(st),sd=60/st.bpm/4,scale=st.scaleArr;
-  if(kind==='bass'){
-    const offs=[0,0,scale[Math.min(4,scale.length-1)]||7,0];
-    offs.forEach((off,k)=>eng.bass(t0+k*sd,sc.root+off,false));
-  }else if(kind==='lead'){
-    const mot=seq.motif.a;
-    for(let k=0;k<6;k++){
-      const deg=mot[Math.floor(Math.random()*16)];
-      eng.lead(t0+k*sd*0.5,sc.root+24+scale[deg],sd*0.45,sc.leadType,1);
-    }
-  }else if(kind==='stab'){
-    sc.chord.forEach(c=>eng.lead(t0,sc.root+12+c,sd*1.5,sc.leadType,0.8));
-  }else{ eng.zap(); }
+  try{
+    const t0=eng.ctx.currentTime+0.03;
+    const st=state,sc=blendedScene(st),sd=60/st.bpm/4,scale=st.scaleArr;
+    if(kind==='bass'){
+      const offs=[0,0,scale[Math.min(4,scale.length-1)]||7,0];
+      offs.forEach((off,k)=>eng.bass(t0+k*sd,sc.root+off,false));
+    }else if(kind==='lead'){
+      const mot=seq.motif.a;
+      for(let k=0;k<6;k++){
+        const deg=mot[Math.floor(Math.random()*32)];
+        eng.lead(t0+k*sd*0.5,sc.root+24+scale[deg],sd*0.45,sc.leadType,1);
+      }
+    }else if(kind==='stab'){
+      sc.chord.forEach(c=>eng.lead(t0,sc.root+12+c,sd*1.5,sc.leadType,0.8));
+    }else{ eng.zap(); }
+  }catch(err){ toast('שגיאת נגינה: '+(err.message||err)); }
 }
 function jam(){
   pushUndo();
   const P=state.patterns;
-  for(let i=0;i<16;i++){P.kick[i]=(i%4===0)?1:0;}
+  for(let i=0;i<32;i++){P.kick[i]=(i%8===0)?1:0;}
   if(Math.random()<0.25){
-    const extra=2+Math.floor(Math.random()*3);
-    for(let k=0;k<extra;k++){const i=Math.floor(Math.random()*16); if(i%4!==0)P.kick[i]=1;}
+    const extra=2+Math.floor(Math.random()*4);
+    for(let k=0;k<extra;k++){const i=Math.floor(Math.random()*32); if(i%8!==0)P.kick[i]=1;}
   }
-  const hp=euclid(5+Math.floor(Math.random()*5),16,Math.floor(Math.random()*4));
-  const pp=euclid(2+Math.floor(Math.random()*4),16,1+Math.floor(Math.random()*3));
-  for(let i=0;i<16;i++){
+  const hp=euclid(9+Math.floor(Math.random()*8),32,Math.floor(Math.random()*4));
+  const pp=euclid(4+Math.floor(Math.random()*6),32,1+Math.floor(Math.random()*3));
+  for(let i=0;i<32;i++){
     P.hat[i]=hp[i];
     if(P.perc) P.perc[i]=pp[i];
   }
   currentEdit().muts++;
   regenMotif();
   rebuildGrid(); save();
-  toast('JAM — גרוב אוקלידי חדש');
+  toast('JAM — גרוב אוקלידי חדש 1/32');
 }
 safeOn('#pBass','click',()=>playLick('bass'));
 safeOn('#pLead','click',()=>playLick('lead'));
@@ -702,6 +703,18 @@ function frame(){
   lop.meters();
 }
 
+safeOn('#aSweep','click',()=>{ if(!eng.ctx){toast('קודם לחץ PLAY');return;} eng.sweep(); toast('SWEEP — פילטר נפתח וסוגר'); });
+safeOn('#aDub','click',()=>{ if(!eng.ctx){toast('קודם לחץ PLAY');return;} eng.dubThrow(); toast('DUB — זנב הדהוד ארוך'); });
+const tapeBtn=$('#aTape');
+if(tapeBtn){
+  const tDown=e=>{e.preventDefault(); if(!eng.ctx)return; lop.layers.forEach(L=>{if(L.src)L.src.playbackRate.setTargetAtTime(0.03,eng.ctx.currentTime,0.12);});};
+  const tUp=()=>{ lop.updateRates(); };
+  tapeBtn.addEventListener('pointerdown',tDown);
+  tapeBtn.addEventListener('pointerup',tUp);
+  tapeBtn.addEventListener('pointercancel',tUp);
+  tapeBtn.addEventListener('pointerleave',tUp);
+}
+
 /* v14: SOUND DOCTOR — measurement instead of guessing */
 function analyzeBuf(buf){
   const d=buf.getChannelData(0),n=d.length;
@@ -781,7 +794,7 @@ async function voiceDoctor(){
 }
 safeOn('#btnDoctor','click',voiceDoctor);
 
-const APP_VERSION='v16';
+const APP_VERSION='v17';
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!window.__psyReload){window.__psyReload=1; location.reload();}
