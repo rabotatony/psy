@@ -20,12 +20,15 @@ const EngineProto={
     this.shaper=c.createWaveShaper(); this.shaper.oversample='4x';
     this.post=c.createGain();
     this.comp=c.createDynamicsCompressor();
-    this.comp.threshold.value=-14; this.comp.ratio.value=5; this.comp.knee.value=18;
-    this.comp.attack.value=0.004; this.comp.release.value=0.16;
+    this.comp.threshold.value=-16; this.comp.ratio.value=4; this.comp.knee.value=24;
+    this.comp.attack.value=0.006; this.comp.release.value=0.28;
     this.comp2=c.createDynamicsCompressor();
     this.comp2.threshold.value=-6; this.comp2.ratio.value=20; this.comp2.knee.value=3;
     this.comp2.attack.value=0.002; this.comp2.release.value=0.09;
     this.clip=c.createWaveShaper(); this.clip.curve=this.softClip(); this.clip.oversample='4x';
+    this.limiter=c.createDynamicsCompressor();
+    this.limiter.threshold.value=-1.5; this.limiter.ratio.value=20; this.limiter.knee.value=0;
+    this.limiter.attack.value=0.001; this.limiter.release.value=0.12;
     this.out=c.createGain(); this.out.gain.value=0.92;
     this.analyser=c.createAnalyser(); this.analyser.fftSize=1024; this.analyser.smoothingTimeConstant=0.82;
 
@@ -37,7 +40,7 @@ const EngineProto={
     this.toneLow=c.createBiquadFilter(); this.toneLow.type='lowshelf'; this.toneLow.frequency.value=110; this.toneLow.gain.value=1.5;
     this.toneHigh=c.createBiquadFilter(); this.toneHigh.type='highshelf'; this.toneHigh.frequency.value=8500; this.toneHigh.gain.value=-2;
     this.comp2.connect(this.toneLow); this.toneLow.connect(this.toneHigh); this.toneHigh.connect(this.clip);
-    this.clip.connect(this.out);
+    this.clip.connect(this.limiter); this.limiter.connect(this.out);
     this.out.connect(this.analyser);
     this.analyser.connect(c.destination);
     if(typeof c.createMediaStreamDestination==='function'){
