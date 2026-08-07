@@ -141,7 +141,7 @@ if(location.protocol==='file:'){
 }
 
 let state={
-  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,roll:false,stylePos:0.3333,styleX:0.92,styleY:0.95,styleOverride:null,
+  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,roll:false,dnaLead:false,stylePos:0.3333,styleX:0.92,styleY:0.95,styleOverride:null,
   song:DEFAULT_SONG.slice(),
   macros:{filter:0.85,space:0.35,drive:0.15,morphX:0.5,morphY:0.45},
   edits:{},ccMap:{},patterns:null,scaleArr:SCALES[SCENES[0].scale],
@@ -456,6 +456,14 @@ function renderAuto(){
 }
 safeOn('#btnAuto','click',()=>{state.autoArr=!state.autoArr; resetArrange(); renderAuto(); save();});
 
+function renderDna(){
+  const el=$('#aDna'); if(el) el.classList.toggle('on',!!state.dnaLead);
+}
+safeOn('#aDna','click',()=>{
+  state.dnaLead=!state.dnaLead;
+  renderDna(); save();
+  toast(state.dnaLead?'DNA LEAD ON — צלילי DNA פרוצדורליים':'DNA LEAD OFF');
+});
 function renderArp(){
   const el=$('#aArp'); if(el) el.classList.toggle('on',!!state.arp);
 }
@@ -845,6 +853,7 @@ if(bv0) bv0.textContent=String(state.bpm);
 if(bs0) bs0.value=String(state.bpm);
 renderAuto();
 renderArp();
+renderDna();
 const vt=$('#verTag'); if(vt) vt.textContent=APP_VERSION;
 viz.init($('#viz'));
 applyScene(state.scene,{init:true});
