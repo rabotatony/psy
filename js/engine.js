@@ -1,4 +1,5 @@
-import {clamp,mtof,SYNTH} from './core.js';
+import {clamp,mtof,SYNTH,SCENES} from './core.js';
+import {makeWave,timbreFor} from './wavetable.js';
 
 const EngineProto={
   ctx:null, st:null, arrFilt:1, lastAcidF:0, recDest:null,
@@ -317,8 +318,10 @@ const EngineProto={
   bass(t,midi,long,bassType){
     const c=this.ctx,f=mtof(midi),m=this.st.macros,vs=this.vs(),dur=this.stepDur()*(long?1.9:0.82)*vs.bass.decay;
     const bt=bassType||'roll';
+    const styleName=(SCENES[this.st.scene]||{}).name||'FULL-ON';
     const o1=c.createOscillator(),o2=c.createOscillator(),sub=c.createOscillator(),sub2=c.createOscillator();
-    o1.type='sawtooth'; o2.type='sawtooth'; sub.type='sine'; sub2.type='sine';
+    try{o1.setPeriodicWave(makeWave(c,timbreFor(styleName,'bass')));o2.setPeriodicWave(makeWave(c,timbreFor(styleName,'bass')));}catch(e){o1.type='sawtooth';o2.type='sawtooth';}
+    sub.type='sine'; sub2.type='sine';
     o1.frequency.value=f; o2.frequency.value=f; o2.detune.value=8; sub.frequency.value=f; sub2.frequency.value=f/2;
     const fl=c.createBiquadFilter(); fl.type='lowpass';
     const peak=Math.min(9000,(260+m.filter*4300+800)*vs.bass.peak);
@@ -438,8 +441,10 @@ const EngineProto={
       const spread=(4+m.morphX*14)/3*vs.lead.width;
       const pos=[-3,-2,-1,0,1,2,3];
       const oscs=[];
+      const styleName2=(SCENES[this.st.scene]||{}).name||'FULL-ON';
+      const leadWave=makeWave(c,timbreFor(styleName2,'lead'));
       for(let v=0;v<7;v++){
-        const ov=c.createOscillator(); ov.type='sawtooth';
+        const ov=c.createOscillator(); try{ov.setPeriodicWave(leadWave);}catch(e){ov.type='sawtooth';}
         ov.frequency.value=f;
         ov.detune.value=pos[v]*spread+(Math.random()*2-1);
         const drift=c.createOscillator(); drift.type='sine';
