@@ -67,6 +67,7 @@ export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
     if(P.hat[s]&&keep) E.hat(tt,false,(0.09+en*0.08)*(s%4===0?1.25:1)*(1+((s*37)%5)*0.03*(1+ch*3)),s%2?0.18:-0.18);
     if(sc.open.includes(s)&&en>0.35) E.hat(tt,true,0.09+en*0.05,0);
     if(sc.clap.includes(s)) E.clap(tt,1,0);
+    if(st.roll) E.hat(tt+(60/st.bpm/8),true,0.08+en*0.05,0);
   }
   if(fl.perc&&sec.perc&&P.perc&&P.perc[s]&&en>0.45) E.perc(tt,sc.percFreq,s%4<2?-0.35:0.35);
   if(fl.hat&&ch>0&&Math.random()<ch*0.03){
@@ -171,6 +172,9 @@ export const seq={
       sec=arrangeBar(this.barLocal,tt,st);
       this.curSec=sec;
       this.uiQ.push({t:tt,s:0,bar:this.barLocal,label:sec.label});
+      if(this.barLocal>0&&this.barLocal%8===0&&Math.random()<0.15+st.swing*0.5){
+        this.motif=genMotif(sc.seed*31+this.barLocal,st.scaleArr);
+      }
       if(sc.pad&&sec.pad&&this.barLocal%2===0) eng.pad(tt,sc.root,sc.chord,2);
       if(this.pendingLayers){lop.startAll(tt); this.pendingLayers=false;}
       lop.startPending(tt);
