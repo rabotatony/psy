@@ -1,9 +1,12 @@
-import {clamp,mtof} from './core.js';
+import {clamp,mtof,SYNTH} from './core.js';
 
 const EngineProto={
   ctx:null, st:null, arrFilt:1, lastAcidF:0, recDest:null,
 
   bind(st){this.st=st;},
+  vs(){
+    return SYNTH[this.st.scene]||{bass:{drive:1,peak:1,q:1,decay:1,sub:1},kick:{decay:1,click:1,punch:1},lead:{bright:1,fold:1,width:1},space:{delay:1,reverb:1}};
+  },
 
   init(existing){
     if(this.ctx) return;
@@ -113,8 +116,8 @@ const EngineProto={
     for(let i=0;i<n;i++){const x=i/(n-1)*2-1; c[i]=k<0.02?x:Math.tanh(k*x)/Math.tanh(k);}
     return c;
   },
-  bassCurve(){
-    const n=257,c=new Float32Array(n),k=1.8;
+  bassCurve(k=1.8){
+    const n=257,c=new Float32Array(n);
     for(let i=0;i<n;i++){const x=i/(n-1)*2-1; c[i]=Math.tanh(k*x)/Math.tanh(k);}
     return c;
   },
@@ -137,8 +140,9 @@ const EngineProto={
     if(!this.ctx||!this.st) return;
     const m=this.st.macros,t=this.ctx.currentTime;
     this.masterFilter.frequency.setTargetAtTime(100*Math.pow(160,clamp(m.filter)*this.arrFilt),t,tc);
-    this.delaySend.gain.setTargetAtTime(0.15+m.space*0.85,t,0.03);
-    this.revSend.gain.setTargetAtTime(m.space*1.1,t,0.03);
+    const sp=this.vs().space;
+    this.delaySend.gain.setTargetAtTime((0.15+m.space*0.85)*sp.delay,t,0.03);
+    this.revSend.gain.setTargetAtTime(m.space*1.1*sp.reverb,t,0.03);
     const fb=0.3+m.morphY*0.3;
     this.fb.gain.setTargetAtTime(fb,t,0.05);
     this.fb2.gain.setTargetAtTime(fb,t,0.05);
@@ -171,27 +175,27 @@ const EngineProto={
   barDur(){return this.stepDur()*16;},
 
   kick(t,acc=1){
-    const c=this.ctx;
+    const c=this.ctx,vs=this.vs();
     const o=c.createOscillator(),g=c.createGain();
     o.type='sine';
     o.frequency.setValueAtTime(165,t);
     o.frequency.exponentialRampToValueAtTime(50,t+0.035);
     g.gain.setValueAtTime(1.05*acc,t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.18*vs.kick.decay);
     o.connect(g); g.connect(this.sum);
     o.start(t); o.stop(t+0.3);
     const o2=c.createOscillator(),g2=c.createGain();
     o2.type='triangle';
     o2.frequency.setValueAtTime(300,t);
     o2.frequency.exponentialRampToValueAtTime(60,t+0.025);
-    g2.gain.setValueAtTime(0.45*acc,t);
+    g2.gain.setValueAtTime(0.45*acc*vs.kick.punch,t);
     g2.gain.exponentialRampToValueAtTime(0.001,t+0.05);
     o2.connect(g2); g2.connect(this.sum);
     o2.start(t); o2.stop(t+0.06);
     const s=c.createBufferSource(); s.buffer=this.noise;
     const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=4500;
     const cg=c.createGain();
-    cg.gain.setValueAtTime(0.3*acc,t);
+    cg.gain.setValueAtTime(0.3*acc*vs.kick.click,t);
     cg.gain.exponentialRampToValueAtTime(0.001,t+0.012);
     s.connect(hp); hp.connect(cg); cg.connect(this.sum);
     s.start(t); s.stop(t+0.03);
@@ -254,21 +258,21 @@ const EngineProto={
   },
 
   bass(t,midi,long){
-    const c=this.ctx,f=mtof(midi),m=this.st.macros,dur=this.stepDur()*(long?1.9:0.82);
+    const c=this.ctx,f=mtof(midi),m=this.st.macros,vs=this.vs(),dur=this.stepDur()*(long?1.9:0.82)*vs.bass.decay;
     const o1=c.createOscillator(),o2=c.createOscillator(),sub=c.createOscillator();
     o1.type='sawtooth'; o2.type='sawtooth'; sub.type='sine';
     o1.frequency.value=f; o2.frequency.value=f; o2.detune.value=8; sub.frequency.value=f;
-    const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=1+m.morphY*9;
-    const peak=Math.min(9000,260+m.filter*4300+800);
+    const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=(1+m.morphY*9)*vs.bass.q;
+    const peak=Math.min(9000,(260+m.filter*4300+800)*vs.bass.peak);
     fl.frequency.setValueAtTime(peak,t);
     fl.frequency.exponentialRampToValueAtTime(Math.max(130,peak*0.25),t+dur);
-    const bs=c.createWaveShaper(); bs.curve=this.bassCurve(); bs.oversample='4x';
+    const bs=c.createWaveShaper(); bs.curve=this.bassCurve(1.2+vs.bass.drive*1.2); bs.oversample='4x';
     const g=c.createGain();
     g.gain.setValueAtTime(0,t);
     g.gain.linearRampToValueAtTime(0.4,t+0.006);
     g.gain.setValueAtTime(0.4,t+dur*0.7);
     g.gain.linearRampToValueAtTime(0,t+dur);
-    const sg=c.createGain(); sg.gain.value=0.6;
+    const sg=c.createGain(); sg.gain.value=0.6*vs.bass.sub;
     o1.connect(fl); o2.connect(fl); sub.connect(sg); sg.connect(fl);
     fl.connect(bs); bs.connect(g); g.connect(this.duck);
     o1.start(t); o2.start(t); sub.start(t);
@@ -277,10 +281,10 @@ const EngineProto={
 
   // v7 lead: acid 303 (square + accent), fold engine, saw with light fold
   lead(t,midi,dur,type,vol=1){
-    const c=this.ctx,m=this.st.macros,f=mtof(midi);
+    const c=this.ctx,m=this.st.macros,vs=this.vs(),f=mtof(midi);
     const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=1+m.morphY*12;
     const g=c.createGain(),res=this.mkSend(0.45);
-    const base=Math.max(180,140+m.filter*5200);
+    const base=Math.max(180,140+m.filter*5200*vs.lead.bright);
     if(type==='acid'){
       const o=c.createOscillator(); o.type='square';
       if(this.lastAcidF>0){
@@ -302,7 +306,7 @@ const EngineProto={
       o1.type='sawtooth'; o2.type='sawtooth'; o3.type='square';
       o1.frequency.value=f; o2.frequency.value=f; o3.frequency.value=f;
       o1.detune.value=-6+(Math.random()*6-3); o2.detune.value=6+(Math.random()*6-3); o3.detune.value=3+(Math.random()*6-3);
-      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(2.5+m.morphX*4); ws.oversample='4x';
+      const ws=c.createWaveShaper(); ws.curve=this.foldCurve((2.5+m.morphX*4)*vs.lead.fold); ws.oversample='4x';
       const fg=c.createGain(); fg.gain.value=0.5;
       fl.frequency.setValueAtTime(base*0.5,t);
       fl.frequency.exponentialRampToValueAtTime(Math.min(base*3.5,9500),t+0.02);
@@ -318,7 +322,7 @@ const EngineProto={
     }else{
       // v13: 7-voice supersaw with continuous per-voice drift
       const wg=c.createGain(); wg.gain.value=0.22;
-      const spread=(4+m.morphX*14)/3;
+      const spread=(4+m.morphX*14)/3*vs.lead.width;
       const pos=[-3,-2,-1,0,1,2,3];
       const oscs=[];
       for(let v=0;v<7;v++){
