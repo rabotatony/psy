@@ -120,7 +120,7 @@ export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
   const ch=Math.max(0,Math.min(1,st.swing||0));
   if(fl.kick&&sec.kick&&P.kick[s]) E.kick(tt,s%8===0?1:0.92);
   if(fl.bass&&sec.bass&&P.bass[s]&&Math.random()>ch*0.1){
-    E.bass(tt,sc.root+(sc.bassOct[s]||0)+chordProg(st,bar),sc.bassLong);
+    E.bass(tt,sc.root+(sc.bassOct[s]||0)+chordProg(st,bar),sc.bassLong,sc.bassType);
   }
   if(fl.hat&&sec.hat){
     const keep=s%2===0||Math.random()<0.3+en*0.7;
