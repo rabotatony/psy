@@ -441,6 +441,49 @@ const EngineProto={
     this.masterFilter.frequency.exponentialRampToValueAtTime(110,t+bd*0.9);
     this.masterFilter.frequency.setTargetAtTime(this.targetCut(),t+bd*0.95,0.25);
   },
+
+  // v17: drone bass for ambient/dub/chill styles
+  bassDrone(t,midi,dur){
+    const c=this.ctx,f=mtof(midi);
+    const o1=c.createOscillator(); o1.type='sawtooth'; o1.frequency.value=f;
+    const sub=c.createOscillator(); sub.type='sine'; sub.frequency.value=f;
+    const sg=c.createGain(); sg.gain.value=0.7;
+    const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value=320; fl.Q.value=1;
+    const g=c.createGain();
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.28,t+0.4);
+    g.gain.setValueAtTime(0.28,t+Math.max(0.5,dur-0.6));
+    g.gain.linearRampToValueAtTime(0,t+dur);
+    o1.connect(fl); sub.connect(sg); sg.connect(fl); fl.connect(g); g.connect(this.duck);
+    o1.start(t); sub.start(t);
+    const e=t+dur+0.1; o1.stop(e); sub.stop(e);
+  },
+
+  // v17: slow trance filter sweep (opens then closes)
+  sweep(){
+    if(!this.ctx||!this.st) return;
+    const t=this.ctx.currentTime+0.02, bar=60/this.st.bpm*4;
+    const f=this.masterFilter.frequency;
+    f.cancelScheduledValues(t);
+    f.setValueAtTime(Math.max(150,f.value),t);
+    f.exponentialRampToValueAtTime(9000,t+bar*1.5);
+    f.exponentialRampToValueAtTime(220,t+bar*3);
+    f.setTargetAtTime(this.targetCut(),t+bar*3.2,0.4);
+  },
+
+  // v17: dub echo throw — feedback spike for a big delay tail
+  dubThrow(){
+    if(!this.ctx) return;
+    const t=this.ctx.currentTime+0.02;
+    const base=this.st?0.3+this.st.macros.morphY*0.3:0.45;
+    this.fb.gain.cancelScheduledValues(t); this.fb2.gain.cancelScheduledValues(t);
+    this.fb.gain.setValueAtTime(base,t);
+    this.fb.gain.linearRampToValueAtTime(0.88,t+0.15);
+    this.fb.gain.setTargetAtTime(base,t+1.6,0.4);
+    this.fb2.gain.setValueAtTime(base,t);
+    this.fb2.gain.linearRampToValueAtTime(0.88,t+0.15);
+    this.fb2.gain.setTargetAtTime(base,t+1.6,0.4);
+  },
 };
 
 export const eng=Object.create(EngineProto);
