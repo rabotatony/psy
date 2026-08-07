@@ -178,3 +178,19 @@ body.perform .xy{height:140px}
 .playrow button{flex:1;padding:11px 8px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.04);
   color:#cfd6e0;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;cursor:pointer}
 .playrow button.on{border-color:var(--acc);color:var(--acc);background:var(--accSoft);box-shadow:0 0 12px var(--accGlow)}
+
+/* v16 */
+.ver{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--acc);letter-spacing:1px;margin-inline-start:8px}
+.doctor{display:none;position:fixed;inset:0;background:rgba(5,6,10,.97);z-index:100;padding:26px;overflow:auto;
+  font-family:'Orbitron',sans-serif;color:#e8ecf2}
+.doctor b{font-size:16px;letter-spacing:2px;color:var(--acc)}
+.doctor .dsub{font-size:10px;opacity:.85;margin-top:12px;line-height:1.7;font-family:'Heebo',sans-serif}
+.doctor .drow{display:flex;align-items:center;gap:10px;margin-top:11px;font-size:11px}
+.doctor .drow span{width:64px;letter-spacing:1px}
+.doctor .dbar{flex:1;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+.doctor .dbar i{display:block;height:100%;background:var(--acc)}
+.doctor .drow em{font-style:normal;width:56px;text-align:right;font-size:9px}
+.doctor .drow em.ok{color:#7cff9b}
+.doctor .drow em.weak{color:#ffd166}
+.doctor .drow em.silent{color:#ff6b7a}
+.doctor .dclose{margin-top:20px;padding:11px;border:1px solid var(--acc);border-radius:10px;text-align:center;cursor:pointer;font-size:11px;letter-spacing:2px}
