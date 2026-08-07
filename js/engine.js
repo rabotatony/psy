@@ -177,6 +177,41 @@ const EngineProto={
   stepDur(){return 60/this.st.bpm/4;},
   barDur(){return this.stepDur()*16;},
 
+
+  playKey(midi,vol=1){
+    const c=this.ctx; if(!c) return;
+    const m=this.st.macros,vs=this.vs();
+    const leadType=this.st.leadVoice||'pluck';
+    const f=mtof(midi);
+    const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=1+m.morphY*10;
+    const base=Math.max(200,150+m.filter*5500*vs.lead.bright);
+    fl.frequency.setValueAtTime(base,this.ctx.currentTime);
+    const g=c.createGain();
+    const now=this.ctx.currentTime;
+    g.gain.setValueAtTime(0,now);
+    g.gain.linearRampToValueAtTime(0.3*vol,now+0.008);
+    g.gain.setTargetAtTime(0.18*vol,now+0.15,0.12);
+    if(leadType==='pluck'||leadType==='saw'){
+      const o1=c.createOscillator(),o2=c.createOscillator();
+      o1.type='sawtooth'; o2.type='sawtooth';
+      o1.frequency.value=f; o2.frequency.value=f;
+      o1.detune.value=-(3+m.morphX*10); o2.detune.value=3+m.morphX*10;
+      o1.connect(fl); o2.connect(fl);
+      o1.start(now); o2.start(now);
+      o1.stop(now+3); o2.stop(now+3);
+    }else{
+      const o=c.createOscillator(); o.type=leadType==='acid'?'square':'sawtooth';
+      o.frequency.value=f; o.connect(fl);
+      o.start(now); o.stop(now+3);
+    }
+    fl.connect(g); g.connect(this.sum);
+    const rs=this.mkSend(0.35); g.connect(rs[0]); g.connect(rs[1]);
+  },
+
+  playKeyRelease(){
+    // placeholder for future sustain control
+  },
+
   kick(t,acc=1){
     const c=this.ctx,vs=this.vs();
     const o=c.createOscillator(),g=c.createGain();
