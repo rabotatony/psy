@@ -35,11 +35,24 @@ const EngineProto={
     this.sum.connect(this.masterFilter);
     this.masterFilter.connect(this.shaper);
     this.shaper.connect(this.post);
-    this.post.connect(this.comp);
-    this.comp.connect(this.comp2);
+    // --- v34: MULTI-BAND MASTERING (low/mid/high compressed independently) ---
+    this.xLow=c.createBiquadFilter(); this.xLow.type='lowpass'; this.xLow.frequency.value=120; this.xLow.Q.value=0.707;
+    this.xMidHP=c.createBiquadFilter(); this.xMidHP.type='highpass'; this.xMidHP.frequency.value=120; this.xMidHP.Q.value=0.707;
+    this.xMidLP=c.createBiquadFilter(); this.xMidLP.type='lowpass'; this.xMidLP.frequency.value=2500; this.xMidLP.Q.value=0.707;
+    this.xHigh=c.createBiquadFilter(); this.xHigh.type='highpass'; this.xHigh.frequency.value=2500; this.xHigh.Q.value=0.707;
+    this.mbLow=c.createDynamicsCompressor(); this.mbLow.threshold.value=-20; this.mbLow.ratio.value=3; this.mbLow.knee.value=20; this.mbLow.attack.value=0.01; this.mbLow.release.value=0.3;
+    this.mbMid=c.createDynamicsCompressor(); this.mbMid.threshold.value=-18; this.mbMid.ratio.value=3; this.mbMid.knee.value=20; this.mbMid.attack.value=0.008; this.mbMid.release.value=0.25;
+    this.mbHigh=c.createDynamicsCompressor(); this.mbHigh.threshold.value=-20; this.mbHigh.ratio.value=2.5; this.mbHigh.knee.value=20; this.mbHigh.attack.value=0.005; this.mbHigh.release.value=0.2;
+    this.gLow=c.createGain(); this.gLow.gain.value=1.15;
+    this.gMid=c.createGain(); this.gMid.gain.value=1.0;
+    this.gHigh=c.createGain(); this.gHigh.gain.value=0.95;
+    this.mbSum=c.createGain();
+    this.post.connect(this.xLow); this.xLow.connect(this.mbLow); this.mbLow.connect(this.gLow); this.gLow.connect(this.mbSum);
+    this.post.connect(this.xMidHP); this.xMidHP.connect(this.xMidLP); this.xMidLP.connect(this.mbMid); this.mbMid.connect(this.gMid); this.gMid.connect(this.mbSum);
+    this.post.connect(this.xHigh); this.xHigh.connect(this.mbHigh); this.mbHigh.connect(this.gHigh); this.gHigh.connect(this.mbSum);
     this.toneLow=c.createBiquadFilter(); this.toneLow.type='lowshelf'; this.toneLow.frequency.value=110; this.toneLow.gain.value=1.5;
     this.toneHigh=c.createBiquadFilter(); this.toneHigh.type='highshelf'; this.toneHigh.frequency.value=8500; this.toneHigh.gain.value=-2;
-    this.comp2.connect(this.toneLow); this.toneLow.connect(this.toneHigh); this.toneHigh.connect(this.clip);
+    this.mbSum.connect(this.toneLow); this.toneLow.connect(this.toneHigh); this.toneHigh.connect(this.clip);
     this.clip.connect(this.limiter); this.limiter.connect(this.out);
     this.out.connect(this.analyser);
     this.analyser.connect(c.destination);
