@@ -31,7 +31,9 @@ const EngineProto={
     this.shaper.connect(this.post);
     this.post.connect(this.comp);
     this.comp.connect(this.comp2);
-    this.comp2.connect(this.clip);
+    this.toneLow=c.createBiquadFilter(); this.toneLow.type='lowshelf'; this.toneLow.frequency.value=110; this.toneLow.gain.value=1.5;
+    this.toneHigh=c.createBiquadFilter(); this.toneHigh.type='highshelf'; this.toneHigh.frequency.value=8500; this.toneHigh.gain.value=-2;
+    this.comp2.connect(this.toneLow); this.toneLow.connect(this.toneHigh); this.toneHigh.connect(this.clip);
     this.clip.connect(this.out);
     this.out.connect(this.analyser);
     this.analyser.connect(c.destination);
@@ -58,8 +60,8 @@ const EngineProto={
     this.hpR.connect(this.fb2); this.fb2.connect(this.delayL);
 
     this.revSend=c.createGain();
-    this.conv=c.createConvolver(); this.conv.buffer=this.makeImpulse(2.4,3.2);
-    this.rRet=c.createGain(); this.rRet.gain.value=0.85;
+    this.conv=c.createConvolver(); this.conv.buffer=this.makeImpulse(1.8,4.2);
+    this.rRet=c.createGain(); this.rRet.gain.value=0.6;
     this.revSend.connect(this.conv); this.conv.connect(this.rRet); this.rRet.connect(this.sum);
 
     this.wideIn=c.createGain();
@@ -112,7 +114,7 @@ const EngineProto={
     return c;
   },
   bassCurve(){
-    const n=257,c=new Float32Array(n),k=2.5;
+    const n=257,c=new Float32Array(n),k=1.8;
     for(let i=0;i<n;i++){const x=i/(n-1)*2-1; c[i]=Math.tanh(k*x)/Math.tanh(k);}
     return c;
   },
@@ -144,7 +146,7 @@ const EngineProto={
     this.delayL.delayTime.setTargetAtTime(dt,t,0.08);
     this.delayR.delayTime.setTargetAtTime(dt,t,0.08);
     this.shaper.curve=this.driveCurve(m.drive);
-    this.post.gain.setTargetAtTime(1+m.drive*0.4,t,0.03);
+    this.post.gain.setTargetAtTime(1+m.drive*0.2,t,0.03);
   },
 
   targetCut(){return 100*Math.pow(160,clamp(this.st.macros.filter)*this.arrFilt);},
@@ -189,7 +191,7 @@ const EngineProto={
     const s=c.createBufferSource(); s.buffer=this.noise;
     const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3500;
     const cg=c.createGain();
-    cg.gain.setValueAtTime(0.4*acc,t);
+    cg.gain.setValueAtTime(0.3*acc,t);
     cg.gain.exponentialRampToValueAtTime(0.001,t+0.02);
     s.connect(hp); hp.connect(cg); cg.connect(this.sum);
     s.start(t); s.stop(t+0.03);
@@ -315,7 +317,7 @@ const EngineProto={
       const e=t+dur+0.12; o1.stop(e); o2.stop(e); o3.stop(e);
     }else{
       // v13: 7-voice supersaw with continuous per-voice drift
-      const wg=c.createGain(); wg.gain.value=0.28;
+      const wg=c.createGain(); wg.gain.value=0.22;
       const spread=(4+m.morphX*14)/3;
       const pos=[-3,-2,-1,0,1,2,3];
       const oscs=[];
