@@ -542,6 +542,53 @@ const EngineProto={
     this.fb2.gain.linearRampToValueAtTime(0.88,t+0.15);
     this.fb2.gain.setTargetAtTime(base,t+1.6,0.4);
   },
+
+  // v33: playDNA — render any Sound DNA object (large procedural sound library)
+  playDNA(t,midi,dur,dna,vol=1){
+    const c=this.ctx,f=mtof(midi),m=this.st.macros;
+    const o=dna.osc||{},fl0=dna.filter||{},am=dna.amp||{};
+    const unison=o.unison||1,det=o.detune||0;
+    const fl=c.createBiquadFilter(); fl.type='lowpass';
+    fl.Q.value=fl0.Q||1;
+    const cutBase=fl0.cut||2000, envAmt=fl0.env||0.5;
+    fl.frequency.setValueAtTime(Math.min(12000,cutBase*(1+envAmt*2)),t);
+    fl.frequency.exponentialRampToValueAtTime(Math.max(120,cutBase*(1-envAmt*0.6)),t+(am.dec||0.5));
+    // drive stage
+    let driveNode=null;
+    if(dna.drive){driveNode=c.createWaveShaper();driveNode.curve=this.bassCurve(1+dna.drive*2);driveNode.oversample='4x';}
+    // fold stage
+    let foldNode=null;
+    if(dna.fold){foldNode=c.createWaveShaper();foldNode.curve=this.foldCurve(dna.fold);foldNode.oversample='4x';}
+    const g=c.createGain();
+    const atk=am.atk||0.01,dec=(am.dec||0.5);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.3*vol/Math.max(1,unison*0.5),t+atk);
+    g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    const oscs=[];
+    for(let v=0;v<unison;v++){
+      const ov=c.createOscillator(); ov.type=o.wave||'sawtooth';
+      ov.frequency.value=f;
+      if(unison>1) ov.detune.value=(v-(unison-1)/2)*(det||10)+(Math.random()*2-1);
+      if(o.pitchStart){ov.frequency.setValueAtTime(o.pitchStart,t);ov.frequency.exponentialRampToValueAtTime(o.pitchEnd||f,t+(o.pitchTime||0.05));}
+      ov.connect(fl); oscs.push(ov);
+    }
+    // LFO modulation
+    if(dna.lfo){
+      const lfo=c.createOscillator(),lg=c.createGain();
+      lfo.type='sine'; lfo.frequency.value=dna.lfo.rate||4;
+      lg.gain.value=(dna.lfo.depth||0.5)*(dna.lfo.target==='cutoff'?1500:30);
+      lfo.connect(lg);
+      if(dna.lfo.target==='pitch'){for(const ov of oscs)lg.connect(ov.detune);}else{lg.connect(fl.frequency);}
+      lfo.start(t); lfo.stop(t+dur+0.1);
+    }
+    // chain: fl -> [drive] -> [fold] -> g -> sum (+sends)
+    let node=fl;
+    if(driveNode){node.connect(driveNode);node=driveNode;}
+    if(foldNode){node.connect(foldNode);node=foldNode;}
+    node.connect(g); g.connect(this.sum);
+    const rs=this.mkSend(0.35); g.connect(rs[0]); g.connect(rs[1]);
+    for(const ov of oscs){ov.start(t);ov.stop(t+dur+0.1);}
+  },
 };
 
 export const eng=Object.create(EngineProto);
