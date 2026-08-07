@@ -314,10 +314,22 @@ const EngineProto={
       o1.start(t); o2.start(t); o3.start(t);
       const e=t+dur+0.12; o1.stop(e); o2.stop(e); o3.stop(e);
     }else{
-      const o1=c.createOscillator(),o2=c.createOscillator();
-      o1.type='sawtooth'; o2.type='sawtooth';
-      o1.frequency.value=f; o2.frequency.value=f;
-      o1.detune.value=-(4+m.morphX*14)+(Math.random()*6-3); o2.detune.value=4+m.morphX*14+(Math.random()*6-3);
+      // v13: 7-voice supersaw with continuous per-voice drift
+      const wg=c.createGain(); wg.gain.value=0.28;
+      const spread=(4+m.morphX*14)/3;
+      const pos=[-3,-2,-1,0,1,2,3];
+      const oscs=[];
+      for(let v=0;v<7;v++){
+        const ov=c.createOscillator(); ov.type='sawtooth';
+        ov.frequency.value=f;
+        ov.detune.value=pos[v]*spread+(Math.random()*2-1);
+        const drift=c.createOscillator(); drift.type='sine';
+        drift.frequency.value=0.08+Math.random()*0.4;
+        const dg=c.createGain(); dg.gain.value=2.5+Math.random()*3;
+        drift.connect(dg); dg.connect(ov.detune);
+        ov.connect(wg);
+        oscs.push([ov,drift]);
+      }
       const ws=c.createWaveShaper(); ws.curve=this.foldCurve(1+m.morphX*1.4); ws.oversample='4x';
       const lfo=c.createOscillator(),lg=c.createGain();
       lfo.type='sine'; lfo.frequency.value=0.5+m.morphX*11;
@@ -328,9 +340,12 @@ const EngineProto={
       g.gain.linearRampToValueAtTime(0.2,t+0.01);
       g.gain.setValueAtTime(0.2,t+dur*0.75);
       g.gain.linearRampToValueAtTime(0,t+dur+0.09);
-      o1.connect(ws); o2.connect(ws); ws.connect(fl);
-      o1.start(t); o2.start(t); lfo.start(t);
-      const e=t+dur+0.15; o1.stop(e); o2.stop(e); lfo.stop(e);
+      wg.connect(ws); ws.connect(fl);
+      for(const pr of oscs){pr[0].start(t); pr[1].start(t);}
+      lfo.start(t);
+      const e=t+dur+0.15;
+      for(const pr of oscs){pr[0].stop(e); pr[1].stop(e);}
+      lfo.stop(e);
     }
     fl.connect(g);
     g.connect(this.wideIn);
