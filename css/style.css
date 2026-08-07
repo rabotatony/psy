@@ -204,3 +204,9 @@ body.perform .xy{height:140px}
   border-top-color:hsl(140,100%,60%);animation:bspin 1s linear infinite}
 @keyframes bspin{to{transform:rotate(360deg)}}
 .btxt{font-size:14px;opacity:.85;text-align:center;padding:0 20px}
+
+
+/* persistent runtime error pill */
+#errpill{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#3a1016;color:#ffb4bc;
+  border:1px solid #ff6b7a;padding:8px 16px;border-radius:20px;font-size:12px;z-index:300;display:none;
+  max-width:90vw;box-shadow:0 0 18px rgba(255,80,100,.35);font-family:'Heebo',sans-serif}
