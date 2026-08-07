@@ -154,7 +154,7 @@ function projectData(){
 }
 function applyProject(d,silent){
   if(!d||typeof d!=='object') return;
-  if(typeof d.bpm==='number') state.bpm=clamp(d.bpm,120,160)|0;
+  if(typeof d.bpm==='number') state.bpm=clamp(d.bpm,60,200)|0;
   if(Number.isInteger(d.scene)&&SCENES[d.scene]) state.scene=d.scene;
   if(typeof d.autoArr==='boolean') state.autoArr=d.autoArr;
   if(typeof d.swing==='number') state.swing=clamp(d.swing);
@@ -417,7 +417,7 @@ if(xy){
 }
 
 function setBpm(v){
-  state.bpm=clamp(Math.round(v),120,160);
+  state.bpm=clamp(Math.round(v),60,200);
   const bv=$('#bpmVal'),bs=$('#bpmSlider');
   if(bv) bv.textContent=String(state.bpm);
   if(bs) bs.value=String(state.bpm);
