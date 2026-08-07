@@ -20,6 +20,26 @@ function toast(msg,fatal){
   toastT=setTimeout(()=>el.classList.remove('show'),fatal?5000:2200);
 }
 window.addEventListener('error',e=>toast('שגיאה: '+(e.message||'unknown'),true));
+function masterToTarget(buf,rmsTargetDb){
+  let peak=0,sq=0,n=0;
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i++){
+      const v=d[i]; const a=Math.abs(v);
+      if(a>peak)peak=a;
+      if(i%4===0){sq+=v*v;n++;}
+    }
+  }
+  if(peak<0.001) return buf;
+  const rmsDb=10*Math.log10(Math.max(1e-9,sq/n));
+  let gain=Math.pow(10,(rmsTargetDb-rmsDb)/20);
+  if(peak*gain>0.98) gain=0.98/peak;
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i++) d[i]*=gain;
+  }
+  return buf;
+}
 function rmsDb(buf){
   let sq=0,n=0;
   for(let ch=0;ch<buf.numberOfChannels;ch++){
@@ -47,7 +67,7 @@ if(location.protocol==='file:'){
 }
 
 let state={
-  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,stylePos:0.3333,
+  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,stylePos:0.3333,styleX:0.92,styleY:0.95,styleOverride:null,
   song:DEFAULT_SONG.slice(),
   macros:{filter:0.85,space:0.35,drive:0.15,morphX:0.5,morphY:0.45},
   edits:{},ccMap:{},patterns:null,scaleArr:SCALES[SCENES[0].scale],
@@ -55,7 +75,7 @@ let state={
 
 function projectData(){
   return {v:5,bpm:state.bpm,scene:state.scene,autoArr:state.autoArr,swing:state.swing,
-          arp:state.arp,song:state.song,stylePos:state.stylePos,
+          arp:state.arp,song:state.song,stylePos:state.stylePos,styleX:state.styleX,styleY:state.styleY,styleOverride:state.styleOverride,
           macros:state.macros,edits:state.edits,ccMap:state.ccMap};
 }
 function applyProject(d,silent){
@@ -66,6 +86,13 @@ function applyProject(d,silent){
   if(typeof d.swing==='number') state.swing=clamp(d.swing);
   if(typeof d.arp==='boolean') state.arp=d.arp;
   if(typeof d.stylePos==='number') state.stylePos=clamp(d.stylePos);
+  if(typeof d.styleX==='number') state.styleX=clamp(d.styleX);
+  if(typeof d.styleY==='number') state.styleY=clamp(d.styleY);
+  if(d.styleOverride===null||Number.isInteger(d.styleOverride)) state.styleOverride=d.styleOverride;
+  if(typeof d.styleX!=='number'){
+    if(CORNER_SCENES[d.scene]){state.styleX=CORNER_SCENES[d.scene][0];state.styleY=CORNER_SCENES[d.scene][1];state.styleOverride=null;}
+    else if(Number.isInteger(d.scene)&&SCENES[d.scene]) state.styleOverride=d.scene;
+  }
   if(Array.isArray(d.song)&&d.song.length){
     state.song=d.song.map(n=>SECTIONS_BY_NAME[n]?n:'DROP');
   }
@@ -114,7 +141,21 @@ function cycleSong(i){
   state.song[i]=SECTION_NAMES[(idx+1)%SECTION_NAMES.length];
   resetArrange(); buildSong(); save();
 }
-safeOn('#styleRange','input',e=>setStylePos(parseInt(e.target.value,10)/1000,false));
+const sf=$('#styleField');
+if(sf){
+  let dragF=false;
+  const setF=e=>{
+    const r=sf.getBoundingClientRect();
+    state.styleX=clamp((e.clientX-r.left)/r.width);
+    state.styleY=clamp(1-(e.clientY-r.top)/r.height);
+    state.styleOverride=null;
+    applyStyle(false);
+  };
+  sf.addEventListener('pointerdown',e=>{dragF=true; sf.setPointerCapture(e.pointerId); setF(e); e.preventDefault();});
+  sf.addEventListener('pointermove',e=>{if(dragF)setF(e);});
+  sf.addEventListener('pointerup',()=>dragF=false);
+  sf.addEventListener('pointercancel',()=>dragF=false);
+}
 safeOn('#btnSongReset','click',()=>{
   state.song=DEFAULT_SONG.slice();
   resetArrange(); buildSong(); save();
@@ -147,32 +188,36 @@ function buildScenes(){
     wrap.appendChild(b);
   });
 }
-function styleAnchor(i){return STYLE_ORDER.indexOf(i)/(STYLE_ORDER.length-1);}
-function setStylePos(pos,announce){
-  state.stylePos=clamp(pos);
-  const n=STYLE_ORDER.length;
-  const nearIdx=STYLE_ORDER[Math.round(state.stylePos*(n-1))];
-  state.scene=nearIdx;
+const CORNER_SCENES={1:[0.08,0.8],0:[0.92,0.95],2:[0.08,0.45],4:[0.92,0.45]};
+function applyStyle(announce){
   const sc=blendedScene(state);
+  state.scene=sc.nearIdx;
   state.scaleArr=SCALES[sc.scale];
   state.patterns=currentEdit().patterns;
   regenMotif();
   document.documentElement.style.setProperty('--hue',Math.round(sc.hue));
   buildScenes(); rebuildGrid(); resetArrange();
   setBpm(sc.bpm);
-  const sr=$('#styleRange'); if(sr) sr.value=String(Math.round(state.stylePos*1000));
   const sn=$('#styleName');
-  if(sn){
-    const f=state.stylePos*(n-1); const i0=Math.min(n-2,Math.floor(f)); const t=Math.round((f-i0)*100);
-    const A=SCENES[STYLE_ORDER[i0]],B=SCENES[STYLE_ORDER[i0+1]];
-    sn.textContent=t===0?A.name:(t===100?B.name:A.name+' ▸ '+B.name+' '+t+'%');
+  if(sn) sn.textContent=sc.heb+' · '+sc.bpm+' BPM';
+  const dot=$('#styleDot');
+  if(dot&&state.styleOverride===null){
+    dot.style.left=(state.styleX*100)+'%';
+    dot.style.top=((1-state.styleY)*100)+'%';
   }
   save();
-  if(announce) toast('סצנה: '+sc.heb+' ('+sc.name+')');
+  if(announce) toast('סגנון: '+sc.heb+' ('+sc.name+')');
 }
 function applyScene(i,opts){
   opts=opts||{};
-  setStylePos(styleAnchor(i),!opts.init);
+  if(CORNER_SCENES[i]){
+    state.styleOverride=null;
+    state.styleX=CORNER_SCENES[i][0];
+    state.styleY=CORNER_SCENES[i][1];
+  }else{
+    state.styleOverride=i;
+  }
+  applyStyle(!opts.init);
 }
 
 const undoStack=[];
@@ -407,7 +452,7 @@ safeOn('#btnExport','click',async()=>{
   const btn=$('#btnExport'); if(btn){btn.classList.add('busy'); btn.textContent='...';}
   toast('מייצא WAV ('+lop.recSel+' תיבות)...');
   try{
-    const buf=normalizeBuffer(await bounce(lop.recSel),0.97);
+    const buf=masterToTarget(await bounce(lop.recSel),-10.5);
     downloadBlob(bufferToWav(buf),'psyweave-'+state.bpm+'bpm-'+lop.recSel+'bars.wav');
     toast('WAV ⬇ · RMS '+rmsDb(buf).toFixed(1)+' dB');
   }catch(e){toast('שגיאת ייצוא: '+(e&&e.message?e.message:'unknown'),true);}
