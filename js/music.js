@@ -100,13 +100,26 @@ export function blendedScene(st){
   return Object.assign({},SCENES[near],{nearIdx:near});
 }
 
+// v27: chord progression engine — harmonies move, bass/lead/pad follow
+const PROG={
+  MIN:[[0,0,-4,-2],[0,-2,-4,0],[0,0,-2,-4]],
+  PHRY:[[0,0,-2,-1],[0,-1,-2,0],[0,-2,-1,0]],
+  HARM:[[0,0,-4,-2],[0,-2,-4,-1],[0,-4,-2,0]],
+};
+function chordProg(st,bar){
+  const sc=SCENES[st.scene];
+  const progs=PROG[sc.scale]||PROG.MIN;
+  const p=progs[Math.floor(bar/8)%progs.length];
+  return p[Math.floor(bar/2)%p.length];
+}
+
 export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
   fl=fl||{kick:true,bass:true,hat:true,lead:true,pad:true,perc:true,loops:true};
   const en=st.macros?Math.max(0,Math.min(1,st.macros.filter)):0.85;
   const ch=Math.max(0,Math.min(1,st.swing||0));
   if(fl.kick&&sec.kick&&P.kick[s]) E.kick(tt,s%8===0?1:0.92);
   if(fl.bass&&sec.bass&&P.bass[s]&&Math.random()>ch*0.1){
-    E.bass(tt,sc.root+(sc.bassOct[s]||0),sc.bassLong);
+    E.bass(tt,sc.root+(sc.bassOct[s]||0)+chordProg(st,bar),sc.bassLong);
   }
   if(fl.hat&&sec.hat){
     const keep=s%2===0||Math.random()<0.3+en*0.7;
@@ -119,6 +132,7 @@ export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
   if(fl.lead&&sec.lead&&P.lead[s]){
     const mot=((bar>>1)%2===0)?motifs.a:motifs.b;
     let deg=mot[s];
+    const cshift=chordProg(st,bar);
     if(ch>0.05&&Math.random()<ch*0.45){ deg=Math.min(st.scaleArr.length-1,Math.floor((((bar*13+s*7)%16)/16)*st.scaleArr.length)); }
     const oct=en>0.8?12:0;
     if(st.arp){
@@ -129,7 +143,7 @@ export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
         E.lead(tt+k*sdL,midi,sdL*0.5,sc.leadType,(s%8===0)?1:0.8);
       }
     }else{
-      const midi=sc.root+24+st.scaleArr[deg]+oct;
+      const midi=sc.root+24+st.scaleArr[deg]+oct+cshift;
       E.lead(tt,midi,(60/st.bpm/8)*(sc.leadType==='acid'?1.05:0.92)*2,sc.leadType,(s%8===0)?1:0.8);
     }
   }
@@ -182,7 +196,7 @@ export const seq={
       sec=arrangeBar(this.barLocal,tt,st);
       this.curSec=sec;
       this.uiQ.push({t:tt,s:0,bar:this.barLocal,label:sec.label});
-      if(sc.pad&&sec.pad&&this.barLocal%2===0) eng.pad(tt,sc.root,sc.chord,2);
+      if(sc.pad&&sec.pad&&this.barLocal%2===0) eng.pad(tt,sc.root+chordProg(this.st,this.barLocal),sc.chord,2);
       if(sc.bassType==='drone'&&sec.bass&&this.barLocal%2===0) eng.bassDrone(tt,sc.root,(60/st.bpm*4)*2);
       if(this.barLocal>0&&this.barLocal%8===0&&Math.random()<0.12+st.swing*0.35){
         this.motif=mutateMotif(this.motif,st.scaleArr.length);
