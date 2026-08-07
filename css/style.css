@@ -195,3 +195,12 @@ body.perform .xy{height:140px}
 .doctor .drow em.weak{color:#ffd166}
 .doctor .drow em.silent{color:#ff6b7a}
 .doctor .dclose{margin-top:20px;padding:11px;border:1px solid var(--acc);border-radius:10px;text-align:center;cursor:pointer;font-size:11px;letter-spacing:2px}
+
+
+/* boot/loading screen */
+#boot{position:fixed;inset:0;background:#05060a;z-index:200;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;font-family:'Heebo',sans-serif}
+.bspin{width:42px;height:42px;border-radius:50%;border:3px solid rgba(255,255,255,.14);
+  border-top-color:hsl(140,100%,60%);animation:bspin 1s linear infinite}
+@keyframes bspin{to{transform:rotate(360deg)}}
+.btxt{font-size:14px;opacity:.85;text-align:center;padding:0 20px}
