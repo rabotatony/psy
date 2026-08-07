@@ -14,7 +14,7 @@ const EngineProto={
     this.duck=c.createGain(); this.duck.connect(this.sum);
 
     this.masterFilter=c.createBiquadFilter(); this.masterFilter.type='lowpass'; this.masterFilter.Q.value=0.9;
-    this.shaper=c.createWaveShaper(); this.shaper.oversample='2x';
+    this.shaper=c.createWaveShaper(); this.shaper.oversample='4x';
     this.post=c.createGain();
     this.comp=c.createDynamicsCompressor();
     this.comp.threshold.value=-14; this.comp.ratio.value=5; this.comp.knee.value=18;
@@ -22,7 +22,7 @@ const EngineProto={
     this.comp2=c.createDynamicsCompressor();
     this.comp2.threshold.value=-6; this.comp2.ratio.value=20; this.comp2.knee.value=3;
     this.comp2.attack.value=0.002; this.comp2.release.value=0.09;
-    this.clip=c.createWaveShaper(); this.clip.curve=this.softClip(); this.clip.oversample='2x';
+    this.clip=c.createWaveShaper(); this.clip.curve=this.softClip(); this.clip.oversample='4x';
     this.out=c.createGain(); this.out.gain.value=0.92;
     this.analyser=c.createAnalyser(); this.analyser.fftSize=1024; this.analyser.smoothingTimeConstant=0.82;
 
@@ -260,7 +260,7 @@ const EngineProto={
     const peak=Math.min(9000,260+m.filter*4300+800);
     fl.frequency.setValueAtTime(peak,t);
     fl.frequency.exponentialRampToValueAtTime(Math.max(130,peak*0.22),t+dur);
-    const bs=c.createWaveShaper(); bs.curve=this.bassCurve(); bs.oversample='2x';
+    const bs=c.createWaveShaper(); bs.curve=this.bassCurve(); bs.oversample='4x';
     const g=c.createGain();
     g.gain.setValueAtTime(0,t);
     g.gain.linearRampToValueAtTime(0.4,t+0.006);
@@ -299,8 +299,8 @@ const EngineProto={
       const o1=c.createOscillator(),o2=c.createOscillator(),o3=c.createOscillator();
       o1.type='sawtooth'; o2.type='sawtooth'; o3.type='square';
       o1.frequency.value=f; o2.frequency.value=f; o3.frequency.value=f;
-      o1.detune.value=-6; o2.detune.value=6; o3.detune.value=3;
-      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(2.5+m.morphX*4); ws.oversample='2x';
+      o1.detune.value=-6+(Math.random()*6-3); o2.detune.value=6+(Math.random()*6-3); o3.detune.value=3+(Math.random()*6-3);
+      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(2.5+m.morphX*4); ws.oversample='4x';
       const fg=c.createGain(); fg.gain.value=0.5;
       fl.frequency.setValueAtTime(base*0.5,t);
       fl.frequency.exponentialRampToValueAtTime(Math.min(base*3.5,9500),t+0.02);
@@ -317,8 +317,8 @@ const EngineProto={
       const o1=c.createOscillator(),o2=c.createOscillator();
       o1.type='sawtooth'; o2.type='sawtooth';
       o1.frequency.value=f; o2.frequency.value=f;
-      o1.detune.value=-(4+m.morphX*14); o2.detune.value=4+m.morphX*14;
-      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(1+m.morphX*1.4); ws.oversample='2x';
+      o1.detune.value=-(4+m.morphX*14)+(Math.random()*6-3); o2.detune.value=4+m.morphX*14+(Math.random()*6-3);
+      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(1+m.morphX*1.4); ws.oversample='4x';
       const lfo=c.createOscillator(),lg=c.createGain();
       lfo.type='sine'; lfo.frequency.value=0.5+m.morphX*11;
       lg.gain.value=500+m.morphX*2400;
@@ -345,7 +345,7 @@ const EngineProto={
       const f=mtof(mid),o1=c.createOscillator(),o2=c.createOscillator();
       o1.type='sawtooth'; o2.type='sawtooth';
       o1.frequency.value=f; o2.frequency.value=f;
-      o1.detune.value=-6; o2.detune.value=6;
+      o1.detune.value=-6+(Math.random()*8-4); o2.detune.value=6+(Math.random()*8-4);
       const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
       const g=c.createGain();
       g.gain.setValueAtTime(0,t);
