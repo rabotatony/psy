@@ -420,7 +420,7 @@ if(xy){
 }
 
 function setBpm(v){
-  state.bpm=clamp(Math.round(v),60,200);
+  state.bpm=clamp(Math.round(v),40,220);
   const bv=$('#bpmVal'),bs=$('#bpmSlider');
   if(bv) bv.textContent=String(state.bpm);
   if(bs) bs.value=String(state.bpm);
