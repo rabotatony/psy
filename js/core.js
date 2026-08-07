@@ -120,4 +120,6 @@ export const LANES=[
   {id:'perc',heb:'פרק'},
 ];
 
+export const BPM_MIN=40;
+export const BPM_MAX=220;
 export const LS_KEY='psyweave17';
