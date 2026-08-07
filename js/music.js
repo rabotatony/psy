@@ -31,14 +31,19 @@ export function genMotif(seed,scale){
   const strong=[0,Math.min(4,n-1),Math.min(7,n-1)];
   const A=new Array(32);
   let deg=Math.min(7,n-1);
+  const contour=Math.floor(rnd()*3);
   for(let s=0;s<32;s++){
     if(s%8===0){
       deg=strong[Math.floor(rnd()*strong.length)];
       if(s===24) deg=rnd()<0.6?strong[0]:strong[1];
+    }else if(contour===1&&s%2===0){
+      deg+=(rnd()<0.5?2:-2)+(rnd()<0.3?(rnd()<0.5?1:-1):0);
     }else if(s%4===0){
       deg+=rnd()<0.5?-1:1;
+      if(rnd()<0.2) deg+=rnd()<0.5?2:-2;
     }else if(rnd()<0.45){
       deg+=rnd()<0.5?-1:1;
+      if(rnd()<0.1) deg+=rnd()<0.5?2:-2;
     }
     deg=Math.max(0,Math.min(n-1,deg));
     A[s]=deg;
@@ -47,13 +52,13 @@ export function genMotif(seed,scale){
   A[31]=0;
   const B=A.map(d=>{
     const r=rnd();
-    if(r<0.25) return Math.max(0,Math.min(n-1,d+(rnd()<0.5?-1:1)));
-    if(r<0.33) return Math.min(n-1,d+7);
+    if(r<0.2) return Math.max(0,Math.min(n-1,d+(rnd()<0.5?-2:2)));
+    if(r<0.3) return Math.min(n-1,d+7);
+    if(r<0.4) return Math.max(0,Math.min(n-1,d+(rnd()<0.5?-1:1)));
     return d;
   });
   return {a:A,b:B};
 }
-
 function songAt(bar,st){
   const chain=(st.song&&st.song.length)?st.song:DEFAULT_SONG;
   const secs=[];
