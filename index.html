@@ -22,6 +22,22 @@
   }catch(e){}
 })();
 </script>
+<script>
+/* global fatal-error catcher: surface boot errors (module load + runtime) */
+window.__bootErrShown=0;
+window.__showFatal=function(msg){
+  if(window.__bootErrShown) return;
+  window.__bootErrShown=1;
+  var b=document.getElementById('boot');
+  if(b){ b.innerHTML='<div class="btxt" style="max-width:340px;line-height:1.7;text-align:left;direction:ltr">שגיאת טעינה:<br>'+msg+'</div>'; }
+};
+window.addEventListener('error',function(e){
+  window.__showFatal((e.message||'unknown')+'<br><small>'+((e.filename||'').split('/').pop())+' :'+(e.lineno||'')+'</small>');
+});
+window.addEventListener('unhandledrejection',function(e){
+  window.__showFatal(((e.reason&&e.reason.message)||String(e.reason)||'promise rejection'));
+});
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#05060a">
@@ -159,7 +175,7 @@
 <script>
 setTimeout(function(){
   var b=document.getElementById('boot');
-  if(b){ b.innerHTML='<div class="btxt" style="max-width:320px;line-height:1.6">הטעינה נתקעה.<br>נסה/י רענון חזק (Ctrl+Shift+R) או חלון גלישה פרטי.<br>אם זה ממשיך — בדוק/בדקי חיבור אינטרנט.</div>'; }
+  if(b && !window.__bootErrShown){ b.innerHTML='<div class="btxt" style="max-width:320px;line-height:1.6">הטעינה נתקעה.<br>נסה/י רענון חזק (Ctrl+Shift+R) או חלון גלישה פרטי.<br>אם זה ממשיך — בדוק/בדקי חיבור אינטרנט.</div>'; }
 },9000);
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
