@@ -1,4 +1,4 @@
-const CACHE='psyweave-v19';
+const CACHE='psyweave-v20';
 const ASSETS=['./','./index.html','./manifest.json','./icon.png','./css/style.css','./js/core.js','./js/engine.js','./js/music.js','./js/looper.js','./js/viz.js','./js/app.js'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{}));
