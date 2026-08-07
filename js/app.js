@@ -40,6 +40,68 @@ function masterToTarget(buf,rmsTargetDb){
   }
   return buf;
 }
+/* v13: true K-weighted LUFS (ITU-R BS.1770-4) for offline renders */
+function biquadBuf(d,b,a){
+  let x1=0,x2=0,y1=0,y2=0;
+  for(let i=0;i<d.length;i++){
+    const x=d[i];
+    const y=b[0]*x+b[1]*x1+b[2]*x2-a[1]*y1-a[2]*y2;
+    x2=x1;x1=x;y2=y1;y1=y;
+    d[i]=y;
+  }
+}
+function kLufs(buf){
+  if(Math.abs(buf.sampleRate-44100)>1){
+    let sq=0,n=0;
+    for(let ch=0;ch<buf.numberOfChannels;ch++){
+      const d=buf.getChannelData(ch);
+      for(let i=0;i<d.length;i+=4){sq+=d[i]*d[i];n++;}
+    }
+    return 10*Math.log10(Math.max(1e-9,sq/n))-0.6;
+  }
+  const b1=[1.53512485958697,-2.69169618940638,1.19839281085285],a1=[1,-1.69065929318241,0.73248077421585];
+  const b2=[1,-2,1],a2=[1,-1.99004745483398,0.99007225036621];
+  const data=[];
+  for(let c=0;c<buf.numberOfChannels;c++){
+    const d=buf.getChannelData(c).slice(0);
+    biquadBuf(d,b1,a1); biquadBuf(d,b2,a2);
+    data.push(d);
+  }
+  const sr=buf.sampleRate,n=buf.length;
+  const bs=Math.floor(sr*0.4),step=Math.floor(bs/4);
+  const blocks=[];
+  for(let st=0;st+bs<=n;st+=step){
+    let ms=0;
+    for(let c=0;c<data.length;c++){
+      const d=data[c]; let s2=0;
+      for(let i=st;i<st+bs;i+=4) s2+=d[i]*d[i];
+      ms+=s2/(bs/4);
+    }
+    blocks.push(-0.691+10*Math.log10(ms+1e-10));
+  }
+  if(!blocks.length) return -70;
+  const abs=blocks.filter(l=>l>-70);
+  const mAbs=abs.reduce((s3,l)=>s3+Math.pow(10,(l+0.691)/10),0)/Math.max(1,abs.length);
+  const gate=-0.691+10*Math.log10(mAbs)-10;
+  const rel=blocks.filter(l=>l>gate);
+  const mRel=rel.reduce((s3,l)=>s3+Math.pow(10,(l+0.691)/10),0)/Math.max(1,rel.length);
+  return -0.691+10*Math.log10(mRel);
+}
+function masterToTargetLufs(buf,targetLufs){
+  const before=kLufs(buf);
+  let gain=Math.pow(10,(targetLufs-before)/20);
+  let peak=0;
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i+=2){const a=Math.abs(d[i]); if(a>peak)peak=a;}
+  }
+  if(peak*gain>0.98) gain=0.98/Math.max(1e-6,peak);
+  for(let ch=0;ch<buf.numberOfChannels;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<d.length;i++) d[i]*=gain;
+  }
+  return {buf:buf,lufs:kLufs(buf),peak:peak*gain};
+}
 function rmsDb(buf){
   let sq=0,n=0;
   for(let ch=0;ch<buf.numberOfChannels;ch++){
@@ -498,9 +560,9 @@ safeOn('#btnExport','click',async()=>{
   const btn=$('#btnExport'); if(btn){btn.classList.add('busy'); btn.textContent='...';}
   toast('מייצא WAV ('+lop.recSel+' תיבות)...');
   try{
-    const buf=masterToTarget(await bounce(lop.recSel),-10.5);
-    downloadBlob(bufferToWav(buf),'psyweave-'+state.bpm+'bpm-'+lop.recSel+'bars.wav');
-    toast('WAV ⬇ · RMS '+rmsDb(buf).toFixed(1)+' dB');
+    const m=masterToTargetLufs(await bounce(lop.recSel),-9);
+    downloadBlob(bufferToWav(m.buf),'psyweave-'+state.bpm+'bpm-'+lop.recSel+'bars.wav');
+    toast('WAV ⬇ · '+m.lufs.toFixed(1)+' LUFS · פיק '+Math.round(m.peak*100)+'%');
   }catch(e){toast('שגיאת ייצוא: '+(e&&e.message?e.message:'unknown'),true);}
   exporting=false;
   if(btn){btn.classList.remove('busy'); btn.textContent='⬇ WAV';}
