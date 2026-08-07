@@ -449,33 +449,44 @@ const EngineProto={
   },
 
   pad(t,root,chord,bars){
-    const c=this.ctx,dur=bars*this.barDur();
+    const c=this.ctx,dur=bars*this.barDur(),m=this.st.macros,vs=this.vs();
     const notes=chord.map(x=>root+12+x);
     notes.push(root+24+chord[0]);
     notes.forEach(mid=>{
-      const f=mtof(mid),o1=c.createOscillator(),o2=c.createOscillator();
-      o1.type='sawtooth'; o2.type='sawtooth';
-      o1.frequency.value=f; o2.frequency.value=f;
-      o1.detune.value=-6+(Math.random()*8-4); o2.detune.value=6+(Math.random()*8-4);
-      const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+      const f=mtof(mid);
+      const vg=c.createGain(); vg.gain.value=0.016;
+      const oscs=[];
+      const pos=[-2,-1,1,2];
+      for(let v=0;v<4;v++){
+        const o=c.createOscillator(); o.type='sawtooth';
+        o.frequency.value=f;
+        o.detune.value=pos[v]*7+(Math.random()*6-3);
+        o.connect(vg); oscs.push(o);
+      }
+      const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=0.8;
+      lp.frequency.value=700+m.filter*1200;
       const plfo=c.createOscillator(),plg=c.createGain();
-      plfo.type='sine'; plfo.frequency.value=0.06+Math.random()*0.04; plg.gain.value=350;
+      plfo.type='sine'; plfo.frequency.value=0.05+Math.random()*0.05; plg.gain.value=400;
       plfo.connect(plg); plg.connect(lp.frequency);
+      const vlfo=c.createOscillator(),vlg=c.createGain();
+      vlfo.type='sine'; vlfo.frequency.value=0.1+Math.random()*0.1; vlg.gain.value=0.004;
+      vlfo.connect(vlg); vlg.connect(vg.gain);
       const g=c.createGain();
       g.gain.setValueAtTime(0,t);
-      g.gain.linearRampToValueAtTime(0.028,t+0.7);
-      g.gain.setValueAtTime(0.028,t+Math.max(0.8,dur-0.8));
+      g.gain.linearRampToValueAtTime(1,t+0.9);
+      g.gain.setValueAtTime(1,t+Math.max(1.0,dur-1.0));
       g.gain.linearRampToValueAtTime(0,t+dur);
-      const rg=c.createGain(); rg.gain.value=0.5;
-      o1.connect(lp); o2.connect(lp); lp.connect(g);
-      g.connect(rg); rg.connect(this.revSend);
-      g.connect(this.duck);
-      o1.start(t); o2.start(t); plfo.start(t);
-      const e=t+dur+0.1; o1.stop(e); o2.stop(e); plfo.stop(e);
+      vg.connect(lp); lp.connect(g);
+      g.connect(this.revSend); g.connect(this.duck);
+      for(const o of oscs)o.start(t);
+      plfo.start(t); vlfo.start(t);
+      const e=t+dur+0.1;
+      for(const o of oscs)o.stop(e);
+      plfo.stop(e); vlfo.stop(e);
     });
   },
 
-  riser(t0,dur){
+    riser(t0,dur){
     const c=this.ctx;
     if(t0<c.currentTime) t0=c.currentTime+0.02;
     const s=c.createBufferSource(); s.buffer=this.noise; s.loop=true;
