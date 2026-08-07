@@ -1,51 +1,88 @@
+// core.js v17 — emotional scales + trance module grammar + 32-step resolution
 export const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
 export const mtof=m=>440*Math.pow(2,(m-69)/12);
 export function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
+// ---------- emotional scale library (2-octave degree arrays) ----------
 export const SCALES={
-  PHRY:[0,1,3,5,7,8,10,12,13,15,17,19,20,22],
-  MIN :[0,2,3,5,7,8,10,12,14,15,17,19,20,22],
-  HARM:[0,2,3,5,7,8,11,12,14,15,17,19,20,23],
+  PHRY:[0,1,3,5,7,8,10,12,13,15,17,19,20,22],      // dark mystery
+  MIN:[0,2,3,5,7,8,10,12,14,15,17,19,20,22],        // sadness
+  HARM:[0,2,3,5,7,8,11,12,14,15,17,19,20,23],       // dramatic tension
+  DORIAN:[0,2,3,5,7,9,10,12,14,15,17,19,21,22],     // hopeful melancholy
+  LYDIAN:[0,2,4,6,7,9,11,12,14,16,18,19,21,23],     // dreamy float
+  MAJOR:[0,2,4,5,7,9,11,12,14,16,17,19,21,23],      // uplift
+  MIXO:[0,2,4,5,7,9,10,12,14,16,17,19,21,22],       // positive groove
+  DHARM:[0,1,4,5,7,8,11,12,13,16,17,19,20,23],      // double-harmonic exotic emotion
+  PHRYDOM:[0,1,4,5,7,8,10,12,13,16,17,19,20,22],    // middle-eastern / goa feeling
+  PDMIN:[0,3,5,7,10,12,15,17,19,22],                // minor pentatonic — safe & emotional
 };
 
-const Q   =[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
-const ROLL=[0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1];
-const A16 =[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1];
-const E8  =[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0];
-const OFFB=[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0];
-const OCTA=[0,0,0,12,0,0,0,12,0,0,0,12,0,0,0,0];
-const OCTB=[0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0];
-const ZERO=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+export const STEPS=32;
 
-export const RHYTHMS=[
-  [1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],
-  [1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,1],
-  [1,1,0,0,1,0,1,0,0,1,1,0,1,0,0,0],
-  [1,0,0,1,0,1,0,0,0,1,0,0,1,0,1,0],
-];
+// ---------- trance modules: deterministic 32-step pattern grammar ----------
+function pat32(idxs){const a=new Array(32).fill(0);(idxs||[]).forEach(i=>{a[i]=1;});return a;}
+export const pat32x=pat32;
 
+export const MOD={
+  kick:{ four:pat32([0,8,16,24]), halftime:pat32([0,16]), soft:pat32([0,16]), none:pat32([]) },
+  bass:{
+    roll:pat32([2,4,6,10,12,14,18,20,22,26,28,30]),
+    offbeat:pat32([4,12,20,28]),
+    sub:pat32([0,8,16,24]),
+    wobble:pat32([0,6,12,20,26]),
+    none:pat32([]),
+  },
+  hat:{
+    full:pat32([0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30]),
+    eighth:pat32([0,4,8,12,16,20,24,28]),
+    off:pat32([4,12,20,28]),
+    sparse:pat32([8,24]),
+    none:pat32([]),
+  },
+  perc:{
+    tribal:pat32([6,12,22,28]),
+    shuffle:pat32([3,7,11,19,23,27]),
+    sparse:pat32([14,30]),
+    none:pat32([]),
+  },
+  leadGate:{
+    anthem:pat32([0,6,12,16,22,28]),
+    pulse:pat32([0,4,8,12,16,20,24,28]),
+    sparse:pat32([0,12,16,28]),
+    arp:pat32([0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30]),
+    echo:pat32([0,10,16,26]),
+    none:pat32([]),
+  },
+};
+
+const O32=new Array(32).fill(0);
+[6,14,22,30].forEach(i=>{O32[i]=12;});
+const Z32=new Array(32).fill(0);
+
+// ---------- styles: each is a full recipe (scale+bass+drums+lead+fx+mood) ----------
 export const SCENES=[
-  {name:'FULL-ON',heb:'פול-און',hue:140,root:42,scale:'PHRY',leadType:'saw',pad:true,bassLong:false,bpm:142,
-   kick:Q,bass:ROLL,bassOct:OCTA,hat:A16,open:[2,6,10,14],clap:[],perc:[3,11],percFreq:330,
-   gate:RHYTHMS[0],chord:[0,7,12],seed:11},
-  {name:'DARK',heb:'חומר אפל',hue:288,root:38,scale:'PHRY',leadType:'acid',pad:true,bassLong:false,bpm:140,
-   kick:Q,bass:ROLL,bassOct:OCTB,hat:E8,open:[],clap:[4,12],perc:[7,15],percFreq:250,
-   gate:RHYTHMS[3],chord:[0,3,7],seed:29},
-  {name:'PROG',heb:'פרוגרסיב',hue:28,root:45,scale:'MIN',leadType:'saw',pad:true,bassLong:true,bpm:138,
-   kick:Q,bass:OFFB,bassOct:ZERO,hat:E8,open:[2,6,10,14],clap:[],perc:[3,6,11,14],percFreq:392,
-   gate:RHYTHMS[1],chord:[0,7,12],seed:47},
-  {name:'ACID',heb:'אסיד',hue:192,root:40,scale:'HARM',leadType:'acid',pad:false,bassLong:false,bpm:144,
-   kick:Q,bass:ROLL,bassOct:OCTA,hat:A16,open:[2,6,10,14],clap:[4,12],perc:[3,10],percFreq:300,
-   gate:RHYTHMS[2],chord:[0,7],seed:83},
-  {name:'GOA',heb:'גואה',hue:55,root:43,scale:'MIN',leadType:'saw',pad:true,bassLong:false,bpm:138,
-   kick:Q,bass:ROLL,bassOct:OCTA,hat:E8,open:[2,6,10,14],clap:[],perc:[3,6,11,14],percFreq:360,
-   gate:RHYTHMS[1],chord:[0,7,12],seed:131},
-  {name:'NIGHT',heb:'לילה',hue:330,root:41,scale:'HARM',leadType:'acid',pad:false,bassLong:false,bpm:150,
-   kick:Q,bass:ROLL,bassOct:OCTB,hat:A16,open:[2,6,10,14],clap:[4,12],perc:[3,10,14],percFreq:280,
-   gate:RHYTHMS[2],chord:[0,7],seed:197},
-  {name:'FOLD',heb:'פולד',hue:200,root:44,scale:'HARM',leadType:'fold',pad:true,bassLong:false,bpm:145,
-   kick:Q,bass:ROLL,bassOct:OCTA,hat:A16,open:[2,6,10,14],clap:[4,12],perc:[3,11],percFreq:310,
-   gate:RHYTHMS[3],chord:[0,7,12],seed:233},
+ {name:'FULL-ON',heb:'פול-און',mood:'אנרגיה אופטימית',hue:140,root:42,scale:'PHRY',leadType:'saw',pad:true,bassLong:false,bassType:'roll',bpm:142,
+  kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.tribal,gate:MOD.leadGate.anthem,chord:[0,7,12],seed:11},
+ {name:'DARK',heb:'דארק',mood:'אפלה ומתח',hue:288,root:38,scale:'PHRY',leadType:'acid',pad:true,bassLong:false,bassType:'roll',bpm:145,
+  kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.eighth,open:[],clap:[8,24],perc:MOD.perc.sparse,gate:MOD.leadGate.echo,chord:[0,3,7],seed:29},
+ {name:'PROG',heb:'פרוגרסיב',mood:'מרחב וגעגוע',hue:28,root:45,scale:'DORIAN',leadType:'saw',pad:true,bassLong:true,bassType:'offbeat',bpm:134,
+  kick:MOD.kick.four,bass:MOD.bass.offbeat,bassOct:Z32,hat:MOD.hat.off,open:[4,12,20,28],clap:[],perc:MOD.perc.shuffle,gate:MOD.leadGate.sparse,chord:[0,7,12],seed:47},
+ {name:'ACID',heb:'אסיד',mood:'טירוף מתכתי',hue:192,root:40,scale:'HARM',leadType:'acid',pad:false,bassLong:false,bassType:'roll',bpm:144,
+  kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.tribal,gate:MOD.leadGate.pulse,chord:[0,7],seed:83},
+ {name:'GOA',heb:'גואה',mood:'רגש מזרחי-קוסמי',hue:55,root:43,scale:'PHRYDOM',leadType:'saw',pad:true,bassLong:false,bassType:'roll',bpm:138,
+  kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.eighth,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.shuffle,gate:MOD.leadGate.anthem,chord:[0,7,12],seed:131},
+ {name:'NIGHT',heb:'לילה',mood:'היפנוזה מהירה',hue:330,root:41,scale:'HARM',leadType:'fold',pad:false,bassLong:false,bassType:'roll',bpm:150,
+  kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.tribal,gate:MOD.leadGate.pulse,chord:[0,7],seed:197},
+ {name:'FOLD',heb:'פולד',mood:'כאוס מהפנט',hue:200,root:44,scale:'HARM',leadType:'fold',pad:true,bassLong:false,bassType:'roll',bpm:146,
+  kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[],clap:[8,24],perc:MOD.perc.sparse,gate:MOD.leadGate.echo,chord:[0,7],seed:233},
+ {name:'CHILL',heb:'צ׳יל',mood:'חום ורוגע',hue:170,root:45,scale:'MAJOR',leadType:'saw',pad:true,bassLong:true,bassType:'sub',bpm:92,
+  kick:MOD.kick.soft,bass:MOD.bass.sub,bassOct:Z32,hat:MOD.hat.sparse,open:[],clap:[],perc:MOD.perc.shuffle,gate:MOD.leadGate.sparse,chord:[0,4,7],seed:55},
+ {name:'AMBIENT',heb:'אמביאנט',mood:'ריחוף חסר-זמן',hue:220,root:48,scale:'LYDIAN',leadType:'saw',pad:true,bassLong:true,bassType:'drone',bpm:66,
+  kick:MOD.kick.none,bass:MOD.bass.none,bassOct:Z32,hat:MOD.hat.none,open:[],clap:[],perc:MOD.perc.none,gate:MOD.leadGate.echo,chord:[0,7,11],seed:77},
+ {name:'PSYCHILL',heb:'פסייצ׳יל',mood:'רגש אקזוטי',hue:260,root:43,scale:'DHARM',leadType:'fold',pad:true,bassLong:true,bassType:'sub',bpm:96,
+  kick:MOD.kick.soft,bass:MOD.bass.sub,bassOct:Z32,hat:MOD.hat.off,open:[],clap:[],perc:MOD.perc.tribal,gate:MOD.leadGate.echo,chord:[0,5,7],seed:99},
+ {name:'DUB',heb:'דאב',mood:'עומק מהדהד',hue:30,root:40,scale:'MIN',leadType:'fold',pad:true,bassLong:true,bassType:'wobble',bpm:76,
+  kick:MOD.kick.halftime,bass:MOD.bass.wobble,bassOct:Z32,hat:MOD.hat.off,open:[],clap:[],perc:MOD.perc.sparse,gate:MOD.leadGate.echo,chord:[0,3,7],seed:121},
 ];
 
 export const ARRANGEMENT=[
@@ -70,4 +107,3 @@ export const LANES=[
 ];
 
 export const LS_KEY='psyweave3';
-export const STYLE_ORDER=[2,4,0,1,3,6,5]; // PROG,GOA,FULL-ON,DARK,ACID,FOLD,NIGHT
