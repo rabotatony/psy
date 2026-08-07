@@ -164,7 +164,7 @@ export const seq={
     this.uiQ.length=0;
     this.pendingLayers=true;
     this.nextTime=eng.ctx.currentTime+0.08;
-    this.timer=setInterval(()=>this.sched(),25);
+    this.timer=setInterval(()=>this.sched(),15);
   },
 
   stop(){
@@ -179,7 +179,7 @@ export const seq={
 
   sched(){
     const s32=60/this.st.bpm/8;
-    while(this.nextTime<eng.ctx.currentTime+0.12){
+    while(this.nextTime<eng.ctx.currentTime+0.18){
       this.step(this.stepIdx,this.nextTime);
       this.stepIdx=(this.stepIdx+1)%32;
       this.nextTime+=s32;
