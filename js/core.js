@@ -65,7 +65,7 @@ export const SCENES=[
   kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.tribal,gate:MOD.leadGate.anthem,chord:[0,7,12],seed:11},
  {name:'DARK',heb:'דארק',mood:'אפלה ומתח',hue:288,root:38,scale:'PHRY',leadType:'acid',pad:true,bassLong:false,bassType:'roll',bpm:145,
   kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.eighth,open:[],clap:[8,24],perc:MOD.perc.sparse,gate:MOD.leadGate.echo,chord:[0,3,7],seed:29},
- {name:'PROG',heb:'פרוגרסיב',mood:'מרחב וגעגוע',hue:28,root:45,scale:'DORIAN',leadType:'saw',pad:true,bassLong:true,bassType:'offbeat',bpm:134,
+ {name:'PROG',heb:'פרוגרסיב',mood:'מרחב וגעגוע',hue:28,root:45,scale:'DORIAN',leadType:'pluck',pad:true,bassLong:true,bassType:'offbeat',bpm:134,
   kick:MOD.kick.four,bass:MOD.bass.offbeat,bassOct:Z32,hat:MOD.hat.off,open:[4,12,20,28],clap:[],perc:MOD.perc.shuffle,gate:MOD.leadGate.sparse,chord:[0,7,12],seed:47},
  {name:'ACID',heb:'אסיד',mood:'טירוף מתכתי',hue:192,root:40,scale:'HARM',leadType:'acid',pad:false,bassLong:false,bassType:'roll',bpm:144,
   kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.tribal,gate:MOD.leadGate.pulse,chord:[0,7],seed:83},
