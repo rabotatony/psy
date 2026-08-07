@@ -5,9 +5,13 @@ import {lop,bufferToWav,bufferToWav24,downloadBlob} from './looper.js';
 import {viz} from './viz.js';
 
 function __showBootErr(msg){
-  if(window.__bootErrShown) return; window.__bootErrShown=1;
   const b=document.getElementById('boot');
-  if(b){ b.innerHTML='<div class="btxt" style="max-width:340px;line-height:1.7">'+msg+'</div>'; }
+  if(b && !window.__bootErrShown){ window.__bootErrShown=1;
+    b.innerHTML='<div class="btxt" style="max-width:340px;line-height:1.7">'+msg+'</div>'; return; }
+  let pill=document.getElementById('errpill');
+  if(!pill){ pill=document.createElement('div'); pill.id='errpill'; document.body.appendChild(pill); }
+  pill.textContent='⚠ '+msg; pill.style.display='block';
+  clearTimeout(window.__errT); window.__errT=setTimeout(()=>{pill.style.display='none';},8000);
 }
 window.addEventListener('error',e=>{ __showBootErr('שגיאת הרצה: '+(e.message||'unknown')); });
 window.addEventListener('unhandledrejection',e=>{ __showBootErr('שגיאה: '+((e.reason&&e.reason.message)||'unknown')); });
