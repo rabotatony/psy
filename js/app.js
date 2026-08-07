@@ -1,5 +1,5 @@
 import {clamp,SCENES,SCALES,LANES,LS_KEY,SECTIONS_BY_NAME,DEFAULT_SONG,STYLE_ORDER} from './core.js';
-import {eng} from './engine.js';
+import {eng,EngineProto} from './engine.js';
 import {seq,genMotif,resetArrange,bounce,blendedScene,euclid} from './music.js';
 import {lop,bufferToWav,bufferToWav24,downloadBlob} from './looper.js';
 import {viz} from './viz.js';
@@ -725,7 +725,68 @@ async function sndDoctor(){
     toast('LUFS '+rep.lufs.toFixed(1)+' · Crest '+rep.crest.toFixed(1)+'dB · Low '+rep.low+'% Mid '+rep.mid+'% High '+rep.high+'%',true);
   }catch(e){toast('DOCTOR נכשל: '+(e.message||'unknown'),true);}
 }
-safeOn('#btnDoctor','click',sndDoctor);
+/* v16: SOUND DOCTOR v2 — tests every voice on the real device audio engine */
+async function voiceDoctor(){
+  const dEl=$('#doctor'); if(!dEl) return;
+  dEl.style.display='block';
+  dEl.innerHTML='<b>SOUND DOCTOR</b><div class="dsub">בודק כל כלי בנפרד על מנוע האודיו של המכשיר...</div>';
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  const SR=(eng.ctx?eng.ctx.sampleRate:44100)||44100;
+  const DUR=0.7;
+  const voices=[
+    ['KICK',e=>e.kick(0.1,1)],
+    ['BASS',e=>e.bass(0.1,42,false)],
+    ['HAT-C',e=>e.hat(0.1,false,0.16,0)],
+    ['HAT-O',e=>e.hat(0.1,true,0.12,0)],
+    ['CLAP',e=>e.clap(0.1,1,0)],
+    ['PERC',e=>e.perc(0.1,330,0)],
+    ['LEAD',e=>e.lead(0.1,66,0.25,'supersaw',1)],
+    ['ACID',e=>e.lead(0.1,66,0.25,'acid',1)],
+    ['PAD',e=>e.pad(0.1,42,[0,7],1)],
+  ];
+  let html='<b>SOUND DOCTOR</b>';
+  let bad=0;
+  for(const v of voices){
+    let row;
+    try{
+      const octx=new OAC(2,Math.ceil(SR*DUR),SR);
+      const inst=Object.create(EngineProto);
+      inst.bind({bpm:142,macros:state.macros,swing:state.swing});
+      inst.init(octx);
+      inst.applyMacros();
+      v[1](inst);
+      const buf=await octx.startRendering();
+      const d=buf.getChannelData(0);
+      let s2=0; const i0=Math.floor(0.08*SR),i1=Math.min(d.length,Math.floor(0.6*SR));
+      for(let i=i0;i<i1;i++) s2+=d[i]*d[i];
+      const val=Math.sqrt(s2/Math.max(1,i1-i0));
+      const verdict=val>0.003?'OK':(val>0.0005?'WEAK':'SILENT');
+      if(verdict!=='OK') bad++;
+      const pct=Math.min(100,Math.round(val*500));
+      row='<div class="drow"><span>'+v[0]+'</span><span class="dbar"><i style="width:'+pct+'%"></i></span><em class="'+verdict.toLowerCase()+'">'+verdict+'</em></div>';
+    }catch(e){
+      bad++;
+      row='<div class="drow"><span>'+v[0]+'</span><span class="dbar"><i style="width:0%"></i></span><em class="silent">ERR</em></div>';
+    }
+    html+=row;
+    dEl.innerHTML=html;
+  }
+  try{
+    const rep=analyzeBuf(await bounce(2));
+    html+='<div class="dsub">MIX: LUFS '+rep.lufs.toFixed(1)+' · Crest '+rep.crest.toFixed(1)+'dB · Low '+rep.low+'% Mid '+rep.mid+'% High '+rep.high+'%</div>';
+  }catch(e){ html+='<div class="dsub">MIX: שגיאת מדידה</div>'; }
+  html+='<div class="dsub">'+(bad?('נמצאו '+bad+' קולות בעייתיים — שלח לי צילום מסך'):'כל הכלים תקינים ✓')+' · '+APP_VERSION+'</div><div class="dclose">סגירה</div>';
+  dEl.innerHTML=html;
+  dEl.querySelector('.dclose').addEventListener('click',()=>{dEl.style.display='none';});
+}
+safeOn('#btnDoctor','click',voiceDoctor);
+
+const APP_VERSION='v16';
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!window.__psyReload){window.__psyReload=1; location.reload();}
+  });
+}
 
 /* init */
 loadState();
@@ -739,6 +800,7 @@ if(bv0) bv0.textContent=String(state.bpm);
 if(bs0) bs0.value=String(state.bpm);
 renderAuto();
 renderArp();
+const vt=$('#verTag'); if(vt) vt.textContent=APP_VERSION;
 viz.init($('#viz'));
 applyScene(state.scene,{init:true});
 buildSong();
