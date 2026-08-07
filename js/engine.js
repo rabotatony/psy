@@ -259,9 +259,9 @@ const EngineProto={
 
   bass(t,midi,long){
     const c=this.ctx,f=mtof(midi),m=this.st.macros,vs=this.vs(),dur=this.stepDur()*(long?1.9:0.82)*vs.bass.decay;
-    const o1=c.createOscillator(),o2=c.createOscillator(),sub=c.createOscillator();
-    o1.type='sawtooth'; o2.type='sawtooth'; sub.type='sine';
-    o1.frequency.value=f; o2.frequency.value=f; o2.detune.value=8; sub.frequency.value=f;
+    const o1=c.createOscillator(),o2=c.createOscillator(),sub=c.createOscillator(),sub2=c.createOscillator();
+    o1.type='sawtooth'; o2.type='sawtooth'; sub.type='sine'; sub2.type='sine';
+    o1.frequency.value=f; o2.frequency.value=f; o2.detune.value=8; sub.frequency.value=f; sub2.frequency.value=f/2;
     const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=(1+m.morphY*9)*vs.bass.q;
     const peak=Math.min(9000,(260+m.filter*4300+800)*vs.bass.peak);
     fl.frequency.setValueAtTime(peak,t);
@@ -273,10 +273,11 @@ const EngineProto={
     g.gain.setValueAtTime(0.4,t+dur*0.7);
     g.gain.linearRampToValueAtTime(0,t+dur);
     const sg=c.createGain(); sg.gain.value=0.6*vs.bass.sub;
-    o1.connect(fl); o2.connect(fl); sub.connect(sg); sg.connect(fl);
+    const sg2=c.createGain(); sg2.gain.value=0.45*vs.bass.sub;
+    o1.connect(fl); o2.connect(fl); sub.connect(sg); sg.connect(fl); sub2.connect(sg2); sg2.connect(fl);
     fl.connect(bs); bs.connect(g); g.connect(this.duck);
-    o1.start(t); o2.start(t); sub.start(t);
-    const e=t+dur+0.03; o1.stop(e); o2.stop(e); sub.stop(e);
+    o1.start(t); o2.start(t); sub.start(t); sub2.start(t);
+    const e=t+dur+0.03; o1.stop(e); o2.stop(e); sub.stop(e); sub2.stop(e);
   },
 
   // v7 lead: acid 303 (square + accent), fold engine, saw with light fold
