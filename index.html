@@ -1,6 +1,27 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
+<script>
+/* ?fresh escape hatch: force a clean load by nuking stale service-worker + caches */
+(function(){
+  try{
+    if(new URLSearchParams(location.search).indexOf('fresh')===-1) return;
+    var jobs=[];
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+      jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));
+    }
+    if(window.caches&&caches.keys){
+      jobs.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}));
+    }
+    Promise.all(jobs).catch(function(){}).then(function(){
+      if(!sessionStorage.getItem('psy_fresh_done')){
+        sessionStorage.setItem('psy_fresh_done','1');
+        location.replace(location.pathname);
+      }
+    });
+  }catch(e){}
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#05060a">
