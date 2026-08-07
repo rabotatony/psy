@@ -4,6 +4,14 @@ import {seq,genMotif,resetArrange,bounce,blendedScene,euclid} from './music.js';
 import {lop,bufferToWav,bufferToWav24,downloadBlob} from './looper.js';
 import {viz} from './viz.js';
 
+function __showBootErr(msg){
+  if(window.__bootErrShown) return; window.__bootErrShown=1;
+  const b=document.getElementById('boot');
+  if(b){ b.innerHTML='<div class="btxt" style="max-width:340px;line-height:1.7">'+msg+'</div>'; }
+}
+window.addEventListener('error',e=>{ __showBootErr('שגיאת הרצה: '+(e.message||'unknown')); });
+window.addEventListener('unhandledrejection',e=>{ __showBootErr('שגיאה: '+((e.reason&&e.reason.message)||'unknown')); });
+
 const $=s=>document.querySelector(s);
 function safeOn(sel,ev,fn){
   const el=$(sel);
@@ -825,3 +833,4 @@ bindKnob($('#kDrive'),'morphX');
 bindKnob($('#kSwing'),'swing');
 refreshKnobs();
 requestAnimationFrame(frame);
+(function(){const b=document.getElementById('boot'); if(b) b.remove();})();
