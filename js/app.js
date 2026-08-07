@@ -1,4 +1,4 @@
-import {clamp,SCENES,SCALES,LANES,LS_KEY,SECTIONS_BY_NAME,DEFAULT_SONG,STYLE_ORDER} from './core.js';
+import {clamp,SCENES,SCALES,LANES,LS_KEY,SECTIONS_BY_NAME,DEFAULT_SONG} from './core.js';
 import {eng,EngineProto} from './engine.js';
 import {seq,genMotif,resetArrange,bounce,blendedScene,euclid} from './music.js';
 import {lop,bufferToWav,bufferToWav24,downloadBlob} from './looper.js';
