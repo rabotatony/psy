@@ -85,6 +85,20 @@ export const SCENES=[
   kick:MOD.kick.halftime,bass:MOD.bass.wobble,bassOct:Z32,hat:MOD.hat.off,open:[],clap:[],perc:MOD.perc.sparse,gate:MOD.leadGate.echo,chord:[0,3,7],seed:121},
 ];
 
+export const SYNTH=[
+ {bass:{drive:1,peak:1,q:1,decay:1,sub:1},kick:{decay:1,click:1,punch:1},lead:{bright:1,fold:1,width:1},space:{delay:1,reverb:1}},
+ {bass:{drive:1.7,peak:0.6,q:1.4,decay:0.9,sub:1.15},kick:{decay:0.85,click:1.6,punch:1.1},lead:{bright:0.6,fold:2.5,width:0.8},space:{delay:0.8,reverb:0.7}},
+ {bass:{drive:0.6,peak:0.8,q:0.7,decay:1.4,sub:0.9},kick:{decay:1.1,click:0.75,punch:0.9},lead:{bright:0.8,fold:0.6,width:1.2},space:{delay:1.3,reverb:1.4}},
+ {bass:{drive:1.2,peak:1.1,q:1.8,decay:0.85,sub:0.85},kick:{decay:0.9,click:1,punch:1},lead:{bright:0.9,fold:1.6,width:0.9},space:{delay:1,reverb:0.9}},
+ {bass:{drive:0.8,peak:0.85,q:1,decay:1.1,sub:0.9},kick:{decay:1,click:0.87,punch:0.9},lead:{bright:0.9,fold:1,width:1.3},space:{delay:1.5,reverb:1}},
+ {bass:{drive:1.4,peak:0.9,q:1.2,decay:0.8,sub:1},kick:{decay:0.8,click:1.15,punch:1.1},lead:{bright:0.7,fold:2.2,width:0.9},space:{delay:0.9,reverb:0.8}},
+ {bass:{drive:1.5,peak:0.85,q:1.3,decay:0.9,sub:1},kick:{decay:0.9,click:1,punch:1},lead:{bright:0.75,fold:3,width:1},space:{delay:1,reverb:1}},
+ {bass:{drive:0.4,peak:0.6,q:0.6,decay:1.6,sub:1.1},kick:{decay:1.3,click:0.5,punch:0.65},lead:{bright:0.6,fold:0.6,width:1.2},space:{delay:1.2,reverb:1.6}},
+ {bass:{drive:0.3,peak:0.5,q:0.5,decay:2,sub:1.15},kick:{decay:1.5,click:0.4,punch:0.45},lead:{bright:0.5,fold:1,width:1.5},space:{delay:1.3,reverb:2}},
+ {bass:{drive:0.8,peak:0.7,q:1,decay:1.3,sub:1.1},kick:{decay:1.2,click:0.75,punch:0.8},lead:{bright:0.7,fold:1.8,width:1.1},space:{delay:1.4,reverb:1.3}},
+ {bass:{drive:0.9,peak:0.55,q:1,decay:1.2,sub:1.3},kick:{decay:1.4,click:0.75,punch:0.8},lead:{bright:0.6,fold:2.5,width:1},space:{delay:1.7,reverb:1.4}},
+];
+
 export const ARRANGEMENT=[
   {name:'INTRO', bars:8,  kick:1,bass:1,hat:0,lead:0,pad:1,perc:0,filt:0.5},
   {name:'BUILD', bars:8,  kick:1,bass:1,hat:1,lead:0,pad:1,perc:1,filt:0.72,riser:true},
