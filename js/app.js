@@ -67,7 +67,7 @@ if(location.protocol==='file:'){
 }
 
 let state={
-  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,stylePos:0.3333,styleX:0.92,styleY:0.95,styleOverride:null,
+  bpm:142,scene:0,autoArr:true,swing:0.12,arp:false,roll:false,stylePos:0.3333,styleX:0.92,styleY:0.95,styleOverride:null,
   song:DEFAULT_SONG.slice(),
   macros:{filter:0.85,space:0.35,drive:0.15,morphX:0.5,morphY:0.45},
   edits:{},ccMap:{},patterns:null,scaleArr:SCALES[SCENES[0].scale],
@@ -409,6 +409,52 @@ safeOn('#aMut','click',()=>{
   toast('מוטציה למלודיה');
 });
 
+/* v11 smart play */
+function playLick(kind){
+  if(!eng.ctx){toast('קודם לחץ PLAY'); return;}
+  const t0=eng.ctx.currentTime+0.03;
+  const st=state,sc=blendedScene(st),sd=60/st.bpm/4,scale=st.scaleArr;
+  if(kind==='bass'){
+    const offs=[0,0,scale[Math.min(4,scale.length-1)]||7,0];
+    offs.forEach((off,k)=>eng.bass(t0+k*sd,sc.root+off,false));
+  }else if(kind==='lead'){
+    const mot=seq.motif.a;
+    for(let k=0;k<6;k++){
+      const deg=mot[Math.floor(Math.random()*16)];
+      eng.lead(t0+k*sd*0.5,sc.root+24+scale[deg],sd*0.45,sc.leadType,1);
+    }
+  }else if(kind==='stab'){
+    sc.chord.forEach(c=>eng.lead(t0,sc.root+12+c,sd*1.5,sc.leadType,0.8));
+  }else{ eng.zap(); }
+}
+function jam(){
+  pushUndo();
+  const P=state.patterns;
+  const dens={kick:0.2+Math.random()*0.2,bass:0.5+Math.random()*0.3,hat:0.4+Math.random()*0.4,perc:0.2+Math.random()*0.3};
+  for(let i=0;i<16;i++){
+    P.kick[i]=(i%4===0)?1:(Math.random()<dens.kick?1:0);
+    P.bass[i]=(i%4===0)?0:(Math.random()<dens.bass?1:0);
+    P.hat[i]=Math.random()<dens.hat?1:0;
+    if(P.perc) P.perc[i]=Math.random()<dens.perc?1:0;
+  }
+  currentEdit().muts++;
+  regenMotif();
+  rebuildGrid(); save();
+  toast('JAM — רעיון חדש בתוך הז׳אנר');
+}
+safeOn('#pBass','click',()=>playLick('bass'));
+safeOn('#pLead','click',()=>playLick('lead'));
+safeOn('#pStab','click',()=>playLick('stab'));
+safeOn('#pFx','click',()=>playLick('fx'));
+safeOn('#btnJam','click',jam);
+const rollBtn=$('#btnRoll');
+if(rollBtn){
+  const off=()=>{state.roll=false; rollBtn.classList.remove('on');};
+  rollBtn.addEventListener('pointerdown',e=>{e.preventDefault(); state.roll=true; rollBtn.classList.add('on');});
+  rollBtn.addEventListener('pointerup',off);
+  rollBtn.addEventListener('pointercancel',off);
+  rollBtn.addEventListener('pointerleave',off);
+}
 safeOn('#btnRec','click',()=>{
   if(!seq.playing){seq.start(); $('#btnPlay').textContent='■'; $('#btnPlay').classList.add('playing');}
   lop.tap();
@@ -552,6 +598,10 @@ window.addEventListener('keydown',e=>{
   else if(e.key==='d'||e.key==='D'){const el=$('#aDrop'); if(el) el.click();}
   else if(e.key==='f'||e.key==='F'){const el=$('#aFill'); if(el) el.click();}
   else if(e.key==='u'||e.key==='U') doUndo();
+  else if(e.key==='q'||e.key==='Q') playLick('bass');
+  else if(e.key==='w'||e.key==='W') playLick('lead');
+  else if(e.key==='e'||e.key==='E') playLick('stab');
+  else if(e.key==='j'||e.key==='J') jam();
 });
 
 let freqArr=null,pulse=0;
