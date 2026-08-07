@@ -436,12 +436,16 @@ const EngineProto={
       g.gain.linearRampToValueAtTime(0.2,t+0.01);
       g.gain.setValueAtTime(0.2,t+dur*0.75);
       g.gain.linearRampToValueAtTime(0,t+dur+0.09);
+      const vib=c.createOscillator(),vg2=c.createGain();
+      vib.type='sine'; vib.frequency.value=4.5+m.morphX*1.5;
+      vg2.gain.value=4+m.morphX*5;
+      vib.connect(vg2);
       wg.connect(ws); ws.connect(fl);
-      for(const pr of oscs){pr[0].start(t); pr[1].start(t);}
-      lfo.start(t);
+      for(const pr of oscs){pr[0].start(t); pr[1].start(t); vg2.connect(pr[0].detune);}
+      lfo.start(t); vib.start(t);
       const e=t+dur+0.15;
       for(const pr of oscs){pr[0].stop(e); pr[1].stop(e);}
-      lfo.stop(e);
+      lfo.stop(e); vib.stop(e);
     }
     fl.connect(g);
     g.connect(this.wideIn);
