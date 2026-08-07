@@ -409,6 +409,23 @@ const EngineProto={
       const rs=this.mkSend(0.35); g2.connect(rs[0]); g2.connect(rs[1]);
       o.start(t); o.stop(t+dur+0.05);
       return;
+    }else if(type==='fm'){
+      const car=c.createOscillator(); car.type='sine';
+      car.frequency.value=f;
+      const mod=c.createOscillator(); mod.type='sine';
+      mod.frequency.value=f*2.0;
+      const modGain=c.createGain(); modGain.gain.value=f*1.5;
+      mod.connect(modGain); modGain.connect(car.frequency);
+      fl.frequency.setValueAtTime(base*0.8,t);
+      fl.frequency.exponentialRampToValueAtTime(Math.min(base*3,9000),t+0.03);
+      fl.frequency.exponentialRampToValueAtTime(base*0.7,t+dur);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.24,t+0.006);
+      g.gain.setValueAtTime(0.24,t+dur*0.7);
+      g.gain.linearRampToValueAtTime(0,t+dur+0.08);
+      car.connect(fl);
+      car.start(t); mod.start(t);
+      const e=t+dur+0.12; car.stop(e); mod.stop(e);
     }else{
       // v13: 7-voice supersaw with continuous per-voice drift
       const wg=c.createGain(); wg.gain.value=0.22;
