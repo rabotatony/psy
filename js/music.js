@@ -1,5 +1,6 @@
 // music.js v17 — 32-step sequencer, emotional motifs, module-aware scheduling
 import {SCENES,ARRANGEMENT,SECTIONS_BY_NAME,DEFAULT_SONG,TOTAL_BARS} from './core.js';
+import {generateDNA} from './sounddna.js';
 import {eng,EngineProto} from './engine.js';
 import {lop} from './looper.js';
 
@@ -148,7 +149,13 @@ export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
       }
     }else{
       const midi=sc.root+24+st.scaleArr[deg]+oct+cshift;
-      E.lead(tt,midi,(60/st.bpm/8)*(sc.leadType==='acid'?1.05:0.92)*2,sc.leadType,(s%8===0)?1:0.8);
+      if(st.dnaLead){
+        const dna=generateDNA('lead',(sc.seed||1)*997+bar*13+s,(sc.name||''));
+        if(dna&&E.playDNA){E.playDNA(tt,midi,(60/st.bpm/8)*2,dna,(s%8===0)?1:0.8);}
+        else{E.lead(tt,midi,(60/st.bpm/8)*(sc.leadType==='acid'?1.05:0.92)*2,sc.leadType,(s%8===0)?1:0.8);}
+      }else{
+        E.lead(tt,midi,(60/st.bpm/8)*(sc.leadType==='acid'?1.05:0.92)*2,sc.leadType,(s%8===0)?1:0.8);
+      }
     }
   }
 }
