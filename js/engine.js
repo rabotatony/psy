@@ -489,8 +489,10 @@ const EngineProto={
       const vg=c.createGain(); vg.gain.value=0.016;
       const oscs=[];
       const pos=[-2,-1,1,2];
+      const styleNameP=(SCENES[this.st.scene]||{}).name||'FULL-ON';
+      let padWave=null; try{padWave=makeWave(c,timbreFor(styleNameP,'pad'));}catch(e){}
       for(let v=0;v<4;v++){
-        const o=c.createOscillator(); o.type='sawtooth';
+        const o=c.createOscillator(); if(padWave){o.setPeriodicWave(padWave);}else{o.type='sawtooth';}
         o.frequency.value=f;
         o.detune.value=pos[v]*7+(Math.random()*6-3);
         o.connect(vg); oscs.push(o);
