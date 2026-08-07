@@ -86,6 +86,20 @@ function arrangeBar(bar,t,st){
 }
 export function resetArrange(){lastSec=null;}
 
+// v17.2: blendedScene — maps 2D style-field (or override) to nearest scene
+export function blendedScene(st){
+  if(st.styleOverride!==null&&st.styleOverride!==undefined&&SCENES[st.styleOverride]){
+    return Object.assign({},SCENES[st.styleOverride],{nearIdx:st.styleOverride});
+  }
+  const x=Math.max(0,Math.min(1,st.styleX===undefined?0.92:st.styleX));
+  const y=Math.max(0,Math.min(1,st.styleY===undefined?0.95:st.styleY));
+  const corners=[{i:1,x:0.08,y:0.8},{i:0,x:0.92,y:0.95},{i:2,x:0.08,y:0.45},{i:4,x:0.92,y:0.45}];
+  let mi=0,best=1e9;
+  for(let k=0;k<corners.length;k++){const c=corners[k];const d=(x-c.x)*(x-c.x)+(y-c.y)*(y-c.y);if(d<best){best=d;mi=k;}}
+  const near=corners[mi].i;
+  return Object.assign({},SCENES[near],{nearIdx:near});
+}
+
 export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
   fl=fl||{kick:true,bass:true,hat:true,lead:true,pad:true,perc:true,loops:true};
   const en=st.macros?Math.max(0,Math.min(1,st.macros.filter)):0.85;
