@@ -1,7 +1,7 @@
 import {clamp,SCENES,SCALES,LANES,LS_KEY,SECTIONS_BY_NAME,DEFAULT_SONG,STYLE_ORDER} from './core.js';
 import {eng} from './engine.js';
-import {seq,genMotif,resetArrange,bounce,blendedScene} from './music.js';
-import {lop,bufferToWav,downloadBlob} from './looper.js';
+import {seq,genMotif,resetArrange,bounce,blendedScene,euclid} from './music.js';
+import {lop,bufferToWav,bufferToWav24,downloadBlob} from './looper.js';
 import {viz} from './viz.js';
 
 const $=s=>document.querySelector(s);
@@ -206,17 +206,21 @@ function cycleSong(i){
 const sf=$('#styleField');
 if(sf){
   let dragF=false;
-  const setF=e=>{
+  const lightF=e=>{
     const r=sf.getBoundingClientRect();
     state.styleX=clamp((e.clientX-r.left)/r.width);
     state.styleY=clamp(1-(e.clientY-r.top)/r.height);
-    state.styleOverride=null;
-    applyStyle(false);
+    const sc=blendedScene(state);
+    document.documentElement.style.setProperty('--hue',Math.round(sc.hue));
+    setBpm(sc.bpm);
+    const dot=$('#styleDot');
+    if(dot){dot.style.left=(state.styleX*100)+'%';dot.style.top=((1-state.styleY)*100)+'%';}
+    const sn=$('#styleName'); if(sn) sn.textContent=sc.heb+' · '+sc.bpm+' BPM';
   };
-  sf.addEventListener('pointerdown',e=>{dragF=true; sf.setPointerCapture(e.pointerId); setF(e); e.preventDefault();});
-  sf.addEventListener('pointermove',e=>{if(dragF)setF(e);});
-  sf.addEventListener('pointerup',()=>dragF=false);
-  sf.addEventListener('pointercancel',()=>dragF=false);
+  sf.addEventListener('pointerdown',e=>{dragF=true; sf.setPointerCapture(e.pointerId); lightF(e); e.preventDefault();});
+  sf.addEventListener('pointermove',e=>{if(dragF)lightF(e);});
+  sf.addEventListener('pointerup',()=>{if(dragF){dragF=false; applyStyle(false);}});
+  sf.addEventListener('pointercancel',()=>{dragF=false;});
 }
 safeOn('#btnSongReset','click',()=>{
   state.song=DEFAULT_SONG.slice();
@@ -492,17 +496,21 @@ function playLick(kind){
 function jam(){
   pushUndo();
   const P=state.patterns;
-  const dens={kick:0.2+Math.random()*0.2,bass:0.5+Math.random()*0.3,hat:0.4+Math.random()*0.4,perc:0.2+Math.random()*0.3};
+  for(let i=0;i<16;i++){P.kick[i]=(i%4===0)?1:0;}
+  if(Math.random()<0.25){
+    const extra=2+Math.floor(Math.random()*3);
+    for(let k=0;k<extra;k++){const i=Math.floor(Math.random()*16); if(i%4!==0)P.kick[i]=1;}
+  }
+  const hp=euclid(5+Math.floor(Math.random()*5),16,Math.floor(Math.random()*4));
+  const pp=euclid(2+Math.floor(Math.random()*4),16,1+Math.floor(Math.random()*3));
   for(let i=0;i<16;i++){
-    P.kick[i]=(i%4===0)?1:(Math.random()<dens.kick?1:0);
-    P.bass[i]=(i%4===0)?0:(Math.random()<dens.bass?1:0);
-    P.hat[i]=Math.random()<dens.hat?1:0;
-    if(P.perc) P.perc[i]=Math.random()<dens.perc?1:0;
+    P.hat[i]=hp[i];
+    if(P.perc) P.perc[i]=pp[i];
   }
   currentEdit().muts++;
   regenMotif();
   rebuildGrid(); save();
-  toast('JAM — רעיון חדש בתוך הז׳אנר');
+  toast('JAM — גרוב אוקלידי חדש');
 }
 safeOn('#pBass','click',()=>playLick('bass'));
 safeOn('#pLead','click',()=>playLick('lead'));
@@ -561,7 +569,7 @@ safeOn('#btnExport','click',async()=>{
   toast('מייצא WAV ('+lop.recSel+' תיבות)...');
   try{
     const m=masterToTargetLufs(await bounce(lop.recSel),-9);
-    downloadBlob(bufferToWav(m.buf),'psyweave-'+state.bpm+'bpm-'+lop.recSel+'bars.wav');
+    downloadBlob(bufferToWav24(m.buf),'psyweave-'+state.bpm+'bpm-'+lop.recSel+'bars.wav');
     toast('WAV ⬇ · '+m.lufs.toFixed(1)+' LUFS · פיק '+Math.round(m.peak*100)+'%');
   }catch(e){toast('שגיאת ייצוא: '+(e&&e.message?e.message:'unknown'),true);}
   exporting=false;
@@ -694,6 +702,31 @@ function frame(){
   lop.meters();
 }
 
+/* v14: SOUND DOCTOR — measurement instead of guessing */
+function analyzeBuf(buf){
+  const d=buf.getChannelData(0),n=d.length;
+  let peak=0,sq=0,c=0,l=0,h=0,lo=0,mi=0,hi=0;
+  const aL=2*Math.PI*250/44100,aH=2*Math.PI*3000/44100;
+  for(let i=0;i<n;i+=4){
+    const x=d[i]; const a=Math.abs(x); if(a>peak)peak=a;
+    sq+=x*x; c++;
+    l+=aL*(x-l); h+=aH*(x-h);
+    lo+=l*l; mi+=(h-l)*(h-l); hi+=(x-h)*(x-h);
+  }
+  const rms=Math.sqrt(sq/c),tot=lo+mi+hi+1e-9;
+  return {lufs:kLufs(buf),peak:peak,rms:rms,crest:20*Math.log10(peak/(rms+1e-9)),
+    low:Math.round(lo/tot*100),mid:Math.round(mi/tot*100),high:Math.round(hi/tot*100)};
+}
+async function sndDoctor(){
+  if(!eng.ctx){toast('קודם לחץ PLAY');return;}
+  toast('DOCTOR: מרנדר 2 תיבות...');
+  try{
+    const rep=analyzeBuf(await bounce(2));
+    toast('LUFS '+rep.lufs.toFixed(1)+' · Crest '+rep.crest.toFixed(1)+'dB · Low '+rep.low+'% Mid '+rep.mid+'% High '+rep.high+'%',true);
+  }catch(e){toast('DOCTOR נכשל: '+(e.message||'unknown'),true);}
+}
+safeOn('#btnDoctor','click',sndDoctor);
+
 /* init */
 loadState();
 eng.bind(state);
@@ -711,7 +744,7 @@ applyScene(state.scene,{init:true});
 buildSong();
 lop.render();
 renderXY();
-bindKnob($('#kFilter'),'filter',v=>{state.macros.drive=clamp(v*0.85);});
+bindKnob($('#kFilter'),'filter',v=>{state.macros.drive=clamp(v*0.42);});
 bindKnob($('#kSpace'),'space');
 bindKnob($('#kDrive'),'morphX');
 bindKnob($('#kSwing'),'swing');
