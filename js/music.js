@@ -123,12 +123,16 @@ export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
   }
   if(fl.hat&&sec.hat){
     const keep=s%2===0||Math.random()<0.3+en*0.7;
-    if(P.hat[s]&&keep) E.hat(tt,false,(s%8===0?0.16:0.11)*(1+((s*37)%5)*0.03*(1+ch*3)),s%2?0.18:-0.18);
+    if(P.hat[s]&&keep){
+      const ht=tt+(Math.random()-0.5)*0.012;
+      const vel=(s%8===0?0.16:0.11)*(1+((s*37)%5)*0.03*(1+ch*3))*(0.85+Math.random()*0.3);
+      E.hat(ht,false,vel,s%2?0.18:-0.18);
+    }
     if(sc.open.includes(s)&&en>0.35) E.hat(tt,true,0.09+en*0.05,0);
     if(sc.clap.includes(s)) E.clap(tt,1,0);
     if(st.roll) E.hat(tt+(60/st.bpm/8),true,0.08+en*0.05,0);
   }
-  if(fl.perc&&sec.perc&&P.perc&&P.perc[s]) E.perc(tt,sc.percFreq||330,s%8<4?-0.35:0.35);
+  if(fl.perc&&sec.perc&&P.perc&&P.perc[s]) E.perc(tt+(Math.random()-0.5)*0.014,sc.percFreq||330,s%8<4?-0.35:0.35);
   if(fl.lead&&sec.lead&&P.lead[s]){
     const mot=((bar>>1)%2===0)?motifs.a:motifs.b;
     let deg=mot[s];
