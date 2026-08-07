@@ -5,7 +5,7 @@
 /* ?fresh escape hatch: force a clean load by nuking stale service-worker + caches */
 (function(){
   try{
-    if(new URLSearchParams(location.search).indexOf('fresh')===-1) return;
+    if(!new URLSearchParams(location.search).has('fresh')) return;
     var jobs=[];
     if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
       jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}));
