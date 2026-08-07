@@ -5,7 +5,13 @@ const EngineProto={
 
   bind(st){this.st=st;},
   vs(){
-    return SYNTH[this.st.scene]||{bass:{drive:1,peak:1,q:1,decay:1,sub:1},kick:{decay:1,click:1,punch:1},lead:{bright:1,fold:1,width:1},space:{delay:1,reverb:1}};
+    const d=(SYNTH&&SYNTH[this.st.scene])||{};
+    return {
+      bass:Object.assign({drive:1,peak:1,q:1,decay:1,sub:1},d.bass),
+      kick:Object.assign({decay:1,click:1,punch:1},d.kick),
+      lead:Object.assign({bright:1,fold:1,width:1},d.lead),
+      space:Object.assign({delay:1,reverb:1},d.space),
+    };
   },
 
   init(existing){
