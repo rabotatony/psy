@@ -157,3 +157,14 @@ body.perform .xy{height:140px}
   background:var(--acc);border:2px solid #fff2;box-shadow:0 0 12px var(--accGlow);cursor:pointer}
 .styletag{font-family:'Orbitron',sans-serif;font-size:8px;opacity:.6;letter-spacing:1px}
 .stylename{text-align:center;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--acc);margin-top:6px;letter-spacing:1px}
+
+/* v10 style field */
+.stylefield{position:relative;height:110px;border-radius:14px;border:1px solid var(--line);touch-action:none;cursor:crosshair;margin-top:10px;
+  background:radial-gradient(circle at var(--dx,80%) var(--dy,20%), var(--accSoft), transparent 60%),#090b12}
+#styleDot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--acc);
+  box-shadow:0 0 16px var(--acc),0 0 36px var(--accGlow);transform:translate(-50%,-50%);pointer-events:none;left:92%;top:5%}
+.corner{position:absolute;font-family:'Orbitron',sans-serif;font-size:7px;opacity:.55;letter-spacing:1px;pointer-events:none}
+.corner.tl{top:5px;left:7px}
+.corner.tr{top:5px;right:7px}
+.corner.bl{bottom:5px;left:7px}
+.corner.br{bottom:5px;right:7px}
