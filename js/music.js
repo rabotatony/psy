@@ -92,6 +92,28 @@ export function scheduleNotes(E,st,sc,sec,P,s,tt,bar,fl,motifs){
   }
 }
 
+// v14: gentle motif mutation (evolution, not replacement)
+function mutateMotif(m,n){
+  const a=m.a.slice(),b=m.b.slice();
+  for(let i=0;i<16;i++){
+    if(Math.random()<0.18) a[i]=Math.max(0,Math.min(n-1,a[i]+(Math.random()<0.5?-1:1)));
+  }
+  for(let i=0;i<16;i++){
+    if(Math.random()<0.25) b[i]=a[i];
+    else if(Math.random()<0.1) b[i]=Math.max(0,Math.min(n-1,a[i]+1));
+  }
+  return {a:a,b:b};
+}
+// v14: Euclidean rhythms (Bjorklund)
+export function euclid(pulses,steps,rot=0){
+  pulses=Math.max(0,Math.min(steps,pulses));
+  const p=[]; let bucket=0;
+  for(let i=0;i<steps;i++){
+    bucket+=pulses;
+    if(bucket>=steps){bucket-=steps; p.push(1);} else p.push(0);
+  }
+  return p.map((_,i)=>p[(i+rot)%steps]);
+}
 function songAt(bar,st){
   const chain=(st.song&&st.song.length)?st.song:DEFAULT_SONG;
   const secs=[];
@@ -172,8 +194,8 @@ export const seq={
       sec=arrangeBar(this.barLocal,tt,st);
       this.curSec=sec;
       this.uiQ.push({t:tt,s:0,bar:this.barLocal,label:sec.label});
-      if(this.barLocal>0&&this.barLocal%8===0&&Math.random()<0.15+st.swing*0.5){
-        this.motif=genMotif(sc.seed*31+this.barLocal,st.scaleArr);
+      if(this.barLocal>0&&this.barLocal%8===0&&Math.random()<0.12+st.swing*0.35){
+        this.motif=mutateMotif(this.motif,st.scaleArr.length);
       }
       if(sc.pad&&sec.pad&&this.barLocal%2===0) eng.pad(tt,sc.root,sc.chord,2);
       if(this.pendingLayers){lop.startAll(tt); this.pendingLayers=false;}
