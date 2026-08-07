@@ -355,6 +355,188 @@ const EngineProto={
     const e=t+dur+0.03; o1.stop(e); o2.stop(e); sub.stop(e); sub2.stop(e);
   },
 
+  lead(t,midi,dur,type,vol=1){
+    const c=this.ctx,m=this.st.macros,vs=this.vs(),f=mtof(midi);
+    const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=1+m.morphY*12;
+    const g=c.createGain(),res=this.mkSend(0.45);
+    const base=Math.max(180,140+m.filter*5200*vs.lead.bright);
+    if(type==='acid'){
+      const o=c.createOscillator(); o.type='square';
+      if(this.lastAcidF>0){
+        o.frequency.setValueAtTime(this.lastAcidF,t);
+        o.frequency.exponentialRampToValueAtTime(f,t+0.045);
+      }else o.frequency.setValueAtTime(f,t);
+      this.lastAcidF=f;
+      fl.frequency.setValueAtTime(base*0.35,t);
+      fl.frequency.exponentialRampToValueAtTime(Math.min(base*(4+vol*3),11000),t+0.025);
+      fl.frequency.exponentialRampToValueAtTime(base*0.6,t+dur);
+      const pk=0.24+vol*0.1;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(pk,t+0.005);
+      g.gain.setValueAtTime(pk,t+dur*0.6);
+      g.gain.linearRampToValueAtTime(0,t+dur+0.05);
+      o.connect(fl); o.start(t); o.stop(t+dur+0.1);
+    }else if(type==='fold'){
+      const o1=c.createOscillator(),o2=c.createOscillator(),o3=c.createOscillator();
+      o1.type='sawtooth'; o2.type='sawtooth'; o3.type='square';
+      o1.frequency.value=f; o2.frequency.value=f; o3.frequency.value=f;
+      o1.detune.value=-6+(Math.random()*6-3); o2.detune.value=6+(Math.random()*6-3); o3.detune.value=3+(Math.random()*6-3);
+      const ws=c.createWaveShaper(); ws.curve=this.foldCurve((2.5+m.morphX*4)*vs.lead.fold); ws.oversample='4x';
+      const fg=c.createGain(); fg.gain.value=0.5;
+      fl.frequency.setValueAtTime(base*0.5,t);
+      fl.frequency.exponentialRampToValueAtTime(Math.min(base*3.5,9500),t+0.02);
+      fl.frequency.exponentialRampToValueAtTime(base*0.8,t+dur);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.26,t+0.006);
+      g.gain.setValueAtTime(0.26,t+dur*0.7);
+      g.gain.linearRampToValueAtTime(0,t+dur+0.08);
+      o1.connect(ws); o2.connect(ws); o3.connect(fg); fg.connect(ws);
+      ws.connect(fl);
+      o1.start(t); o2.start(t); o3.start(t);
+      const e=t+dur+0.12; o1.stop(e); o2.stop(e); o3.stop(e);
+    }else if(type==='pluck'){
+      const o=c.createOscillator(); o.type='sawtooth';
+      o.frequency.value=f;
+      const flp=c.createBiquadFilter(); flp.type='lowpass'; flp.Q.value=2+vs.lead.fold*6;
+      const pk=Math.min(8000,(300+m.filter*5000)*vs.lead.bright);
+      flp.frequency.setValueAtTime(pk,t);
+      flp.frequency.exponentialRampToValueAtTime(Math.max(200,pk*0.15),t+dur*0.7);
+      const g2=c.createGain();
+      g2.gain.setValueAtTime(0,t);
+      g2.gain.linearRampToValueAtTime(0.32*vol,t+0.004);
+      g2.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      o.connect(flp); flp.connect(g2); g2.connect(this.sum);
+      const rs=this.mkSend(0.35); g2.connect(rs[0]); g2.connect(rs[1]);
+      o.start(t); o.stop(t+dur+0.05);
+      return;
+    }else{
+      // v13: 7-voice supersaw with continuous per-voice drift
+      const wg=c.createGain(); wg.gain.value=0.22;
+      const spread=(4+m.morphX*14)/3*vs.lead.width;
+      const pos=[-3,-2,-1,0,1,2,3];
+      const oscs=[];
+      for(let v=0;v<7;v++){
+        const ov=c.createOscillator(); ov.type='sawtooth';
+        ov.frequency.value=f;
+        ov.detune.value=pos[v]*spread+(Math.random()*2-1);
+        const drift=c.createOscillator(); drift.type='sine';
+        drift.frequency.value=0.08+Math.random()*0.4;
+        const dg=c.createGain(); dg.gain.value=2.5+Math.random()*3;
+        drift.connect(dg); dg.connect(ov.detune);
+        ov.connect(wg);
+        oscs.push([ov,drift]);
+      }
+      const ws=c.createWaveShaper(); ws.curve=this.foldCurve(1+m.morphX*1.4); ws.oversample='4x';
+      const lfo=c.createOscillator(),lg=c.createGain();
+      lfo.type='sine'; lfo.frequency.value=0.5+m.morphX*11;
+      lg.gain.value=500+m.morphX*2400;
+      lfo.connect(lg); lg.connect(fl.frequency);
+      fl.frequency.setValueAtTime(base,t);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.2,t+0.01);
+      g.gain.setValueAtTime(0.2,t+dur*0.75);
+      g.gain.linearRampToValueAtTime(0,t+dur+0.09);
+      wg.connect(ws); ws.connect(fl);
+      for(const pr of oscs){pr[0].start(t); pr[1].start(t);}
+      lfo.start(t);
+      const e=t+dur+0.15;
+      for(const pr of oscs){pr[0].stop(e); pr[1].stop(e);}
+      lfo.stop(e);
+    }
+    fl.connect(g);
+    g.connect(this.wideIn);
+    g.connect(res[0]); g.connect(res[1]);
+  },
+
+  pad(t,root,chord,bars){
+    const c=this.ctx,dur=bars*this.barDur();
+    const notes=chord.map(x=>root+12+x);
+    notes.push(root+24+chord[0]);
+    notes.forEach(mid=>{
+      const f=mtof(mid),o1=c.createOscillator(),o2=c.createOscillator();
+      o1.type='sawtooth'; o2.type='sawtooth';
+      o1.frequency.value=f; o2.frequency.value=f;
+      o1.detune.value=-6+(Math.random()*8-4); o2.detune.value=6+(Math.random()*8-4);
+      const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+      const plfo=c.createOscillator(),plg=c.createGain();
+      plfo.type='sine'; plfo.frequency.value=0.06+Math.random()*0.04; plg.gain.value=350;
+      plfo.connect(plg); plg.connect(lp.frequency);
+      const g=c.createGain();
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.028,t+0.7);
+      g.gain.setValueAtTime(0.028,t+Math.max(0.8,dur-0.8));
+      g.gain.linearRampToValueAtTime(0,t+dur);
+      const rg=c.createGain(); rg.gain.value=0.5;
+      o1.connect(lp); o2.connect(lp); lp.connect(g);
+      g.connect(rg); rg.connect(this.revSend);
+      g.connect(this.duck);
+      o1.start(t); o2.start(t); plfo.start(t);
+      const e=t+dur+0.1; o1.stop(e); o2.stop(e); plfo.stop(e);
+    });
+  },
+
+  riser(t0,dur){
+    const c=this.ctx;
+    if(t0<c.currentTime) t0=c.currentTime+0.02;
+    const s=c.createBufferSource(); s.buffer=this.noise; s.loop=true;
+    const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.8;
+    bp.frequency.setValueAtTime(300,t0);
+    bp.frequency.exponentialRampToValueAtTime(9200,t0+dur);
+    const g=c.createGain();
+    g.gain.setValueAtTime(0.001,t0);
+    g.gain.exponentialRampToValueAtTime(0.34,t0+dur);
+    s.connect(bp); bp.connect(g); g.connect(this.sum);
+    s.start(t0); s.stop(t0+dur+0.05);
+  },
+
+  build(t0,dur){
+    this.riser(t0,dur);
+    const bd=dur/2, sd=bd/16;
+    for(let k=0;k<16;k++) this.clap(t0+bd+k*sd,0.06+0.3*k/16,0);
+  },
+
+  fill(t0){
+    const sd=this.stepDur();
+    for(let k=0;k<16;k++){
+      this.clap(t0+k*sd,0.1+0.4*k/15,((k%2)?0.3:-0.3));
+      if(k%4===2) this.hat(t0+k*sd,true,0.14,0);
+    }
+    const s=this.ctx.createBufferSource(); s.buffer=this.noise; s.loop=true;
+    const bp=this.ctx.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=2;
+    bp.frequency.setValueAtTime(900,t0);
+    bp.frequency.exponentialRampToValueAtTime(7000,t0+sd*16);
+    const g=this.ctx.createGain();
+    g.gain.setValueAtTime(0.001,t0);
+    g.gain.exponentialRampToValueAtTime(0.18,t0+sd*16);
+    g.gain.exponentialRampToValueAtTime(0.001,t0+sd*16+0.08);
+    s.connect(bp); bp.connect(g); g.connect(this.sum);
+    s.start(t0); s.stop(t0+sd*16+0.1);
+  },
+
+  zap(){
+    if(!this.ctx) return;
+    const t=this.ctx.currentTime+0.01,c=this.ctx;
+    const o=c.createOscillator(),g=c.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(1300,t);
+    o.frequency.exponentialRampToValueAtTime(90,t+0.22);
+    g.gain.setValueAtTime(0.4,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+    const res=this.mkSend(0.8);
+    o.connect(g); g.connect(this.sum); g.connect(res[0]);
+    o.start(t); o.stop(t+0.3);
+  },
+
+  drop(){
+    if(!this.ctx||!this.st) return;
+    const t=this.ctx.currentTime+0.02,bd=this.barDur();
+    this.masterFilter.frequency.cancelScheduledValues(t);
+    this.masterFilter.frequency.setValueAtTime(Math.max(150,this.masterFilter.frequency.value),t);
+    this.masterFilter.frequency.exponentialRampToValueAtTime(110,t+bd*0.9);
+    this.masterFilter.frequency.setTargetAtTime(this.targetCut(),t+bd*0.95,0.25);
+  },
+
+  // v17: drone bass for ambient/dub/chill styles
   bassDrone(t,midi,dur){
     const c=this.ctx,f=mtof(midi);
     const o1=c.createOscillator(); o1.type='sawtooth'; o1.frequency.value=f;
