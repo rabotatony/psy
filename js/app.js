@@ -276,7 +276,7 @@ function applyStyle(announce){
   state.patterns=currentEdit().patterns;
   regenMotif();
   document.documentElement.style.setProperty('--hue',Math.round(sc.hue));
-  buildScenes(); rebuildGrid(); resetArrange();
+  buildScenes(); rebuildGrid(); resetArrange(); buildPlayPads();
   setBpm(sc.bpm);
   const sn=$('#styleName');
   if(sn) sn.textContent=sc.heb+' · '+sc.bpm+' BPM';
