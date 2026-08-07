@@ -15,7 +15,30 @@ export function bufferToWav(buf){
   for(let i=0;i<len;i++){
     for(let c=0;c<nCh;c++){
       let v=chans[c][i]; v=Math.max(-1,Math.min(1,v));
-      dv.setInt16(off,v<0?v*0x8000:v*0x7FFF,true); off+=2;
+      const dth=(Math.random()+Math.random()-1)/32768;
+      const vd=Math.max(-1,Math.min(1,v+dth));
+      dv.setInt16(off,vd<0?vd*0x8000:vd*0x7FFF,true); off+=2;
+    }
+  }
+  return new Blob([ab],{type:'audio/wav'});
+}
+export function bufferToWav24(buf){
+  const nCh=buf.numberOfChannels,sr=buf.sampleRate,len=buf.length;
+  const dataLen=len*nCh*3;
+  const ab=new ArrayBuffer(44+dataLen);
+  const dv=new DataView(ab);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,'RIFF'); dv.setUint32(4,36+dataLen,true); ws(8,'WAVE');
+  ws(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,nCh,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*nCh*3,true); dv.setUint16(32,nCh*3,true); dv.setUint16(34,24,true);
+  ws(36,'data'); dv.setUint32(40,dataLen,true);
+  let off=44;
+  for(let i=0;i<len;i++){
+    for(let ch=0;ch<nCh;ch++){
+      let v=buf.getChannelData(ch)[i]; v=Math.max(-1,Math.min(1,v));
+      const int24=Math.round(v*8388607);
+      dv.setUint8(off,int24&0xFF); dv.setUint8(off+1,(int24>>8)&0xFF); dv.setUint8(off+2,(int24>>16)&0xFF);
+      off+=3;
     }
   }
   return new Blob([ab],{type:'audio/wav'});
