@@ -86,17 +86,17 @@ export const SCENES=[
 ];
 
 export const SYNTH=[
- {bass:{drive:1,peak:1,q:1,decay:1,sub:1},kick:{decay:1,click:1,punch:1},lead:{bright:1,fold:1,width:1},space:{delay:1,reverb:1}},
- {bass:{drive:1.7,peak:0.6,q:1.4,decay:0.9,sub:1.15},kick:{decay:0.85,click:1.6,punch:1.1},lead:{bright:0.6,fold:2.5,width:0.8},space:{delay:0.8,reverb:0.7}},
- {bass:{drive:0.6,peak:0.8,q:0.7,decay:1.4,sub:0.9},kick:{decay:1.1,click:0.75,punch:0.9},lead:{bright:0.8,fold:0.6,width:1.2},space:{delay:1.3,reverb:1.4}},
- {bass:{drive:1.2,peak:1.1,q:1.8,decay:0.85,sub:0.85},kick:{decay:0.9,click:1,punch:1},lead:{bright:0.9,fold:1.6,width:0.9},space:{delay:1,reverb:0.9}},
- {bass:{drive:0.8,peak:0.85,q:1,decay:1.1,sub:0.9},kick:{decay:1,click:0.87,punch:0.9},lead:{bright:0.9,fold:1,width:1.3},space:{delay:1.5,reverb:1}},
- {bass:{drive:1.4,peak:0.9,q:1.2,decay:0.8,sub:1},kick:{decay:0.8,click:1.15,punch:1.1},lead:{bright:0.7,fold:2.2,width:0.9},space:{delay:0.9,reverb:0.8}},
- {bass:{drive:1.5,peak:0.85,q:1.3,decay:0.9,sub:1},kick:{decay:0.9,click:1,punch:1},lead:{bright:0.75,fold:3,width:1},space:{delay:1,reverb:1}},
- {bass:{drive:0.4,peak:0.6,q:0.6,decay:1.6,sub:1.1},kick:{decay:1.3,click:0.5,punch:0.65},lead:{bright:0.6,fold:0.6,width:1.2},space:{delay:1.2,reverb:1.6}},
- {bass:{drive:0.3,peak:0.5,q:0.5,decay:2,sub:1.15},kick:{decay:1.5,click:0.4,punch:0.45},lead:{bright:0.5,fold:1,width:1.5},space:{delay:1.3,reverb:2}},
- {bass:{drive:0.8,peak:0.7,q:1,decay:1.3,sub:1.1},kick:{decay:1.2,click:0.75,punch:0.8},lead:{bright:0.7,fold:1.8,width:1.1},space:{delay:1.4,reverb:1.3}},
- {bass:{drive:0.9,peak:0.55,q:1,decay:1.2,sub:1.3},kick:{decay:1.4,click:0.75,punch:0.8},lead:{bright:0.6,fold:2.5,width:1},space:{delay:1.7,reverb:1.4}},
+ {bass:{drive:1.1,peak:1.2,q:0.9,decay:0.9,sub:1.0},kick:{decay:0.9,click:1.2,punch:1.2},lead:{bright:1.3,fold:0.8,width:1.1},space:{delay:1.0,reverb:0.9}},
+ {bass:{drive:2.0,peak:0.5,q:1.6,decay:0.85,sub:1.2},kick:{decay:0.8,click:1.8,punch:1.3},lead:{bright:0.5,fold:3.0,width:0.7},space:{delay:0.7,reverb:0.6}},
+ {bass:{drive:0.5,peak:0.9,q:0.6,decay:1.5,sub:0.9},kick:{decay:1.2,click:0.7,punch:0.8},lead:{bright:0.9,fold:0.4,width:1.5},space:{delay:1.4,reverb:1.5}},
+ {bass:{drive:1.3,peak:1.2,q:2.5,decay:0.8,sub:0.8},kick:{decay:0.9,click:1.0,punch:1.0},lead:{bright:1.0,fold:2.0,width:0.9},space:{delay:1.0,reverb:0.8}},
+ {bass:{drive:0.9,peak:0.9,q:1.0,decay:1.1,sub:0.95},kick:{decay:1.0,click:0.9,punch:0.95},lead:{bright:1.0,fold:1.2,width:1.4},space:{delay:1.6,reverb:1.2}},
+ {bass:{drive:1.6,peak:0.8,q:1.3,decay:0.75,sub:1.0},kick:{depth:0.75,decay:0.75,click:1.3,punch:1.2},lead:{bright:0.6,fold:2.5,width:0.85},space:{delay:0.8,reverb:0.7}},
+ {bass:{drive:1.7,peak:0.8,q:1.4,decay:0.85,sub:1.0},kick:{decay:0.85,click:1.1,punch:1.0},lead:{bright:0.7,fold:3.5,width:1.0},space:{delay:1.0,reverb:0.9}},
+ {bass:{drive:0.3,peak:0.6,q:0.5,decay:1.7,sub:1.1},kick:{decay:1.4,click:0.4,punch:0.6},lead:{bright:0.6,fold:0.5,width:1.3},space:{delay:1.3,reverb:1.7}},
+ {bass:{drive:0.2,peak:0.4,q:0.4,decay:2.2,sub:1.2},kick:{decay:1.6,click:0.3,punch:0.4},lead:{bright:0.4,fold:0.8,width:1.6},space:{delay:1.4,reverb:2.2}},
+ {bass:{drive:0.7,peak:0.7,q:1.1,decay:1.4,sub:1.1},kick:{decay:1.3,click:0.7,punch:0.75},lead:{bright:0.7,fold:2.0,width:1.2},space:{delay:1.5,reverb:1.4}},
+ {bass:{drive:0.8,peak:0.5,q:1.0,decay:1.3,sub:1.5},kick:{decay:1.5,click:0.7,punch:0.75},lead:{bright:0.5,fold:2.8,width:1.0},space:{delay:1.8,reverb:1.5}},
 ];
 
 export const ARRANGEMENT=[
