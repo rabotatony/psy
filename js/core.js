@@ -71,7 +71,7 @@ export const SCENES=[
   kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.tribal,gate:MOD.leadGate.pulse,chord:[0,7],seed:83},
  {name:'GOA',heb:'גואה',mood:'רגש מזרחי-קוסמי',hue:55,root:43,scale:'PHRYDOM',leadType:'saw',pad:true,bassLong:false,bassType:'roll',bpm:138,
   kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.eighth,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.shuffle,gate:MOD.leadGate.anthem,chord:[0,7,12],seed:131},
- {name:'NIGHT',heb:'לילה',mood:'היפנוזה מהירה',hue:330,root:41,scale:'HARM',leadType:'fold',pad:false,bassLong:false,bassType:'roll',bpm:150,
+ {name:'NIGHT',heb:'לילה',mood:'היפנוזה מהירה',hue:330,root:41,scale:'HARM',leadType:'fm',pad:false,bassLong:false,bassType:'roll',bpm:150,
   kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[4,12,20,28],clap:[8,24],perc:MOD.perc.tribal,gate:MOD.leadGate.pulse,chord:[0,7],seed:197},
  {name:'FOLD',heb:'פולד',mood:'כאוס מהפנט',hue:200,root:44,scale:'HARM',leadType:'fold',pad:true,bassLong:false,bassType:'roll',bpm:146,
   kick:MOD.kick.four,bass:MOD.bass.roll,bassOct:O32,hat:MOD.hat.full,open:[],clap:[8,24],perc:MOD.perc.sparse,gate:MOD.leadGate.echo,chord:[0,7],seed:233},
