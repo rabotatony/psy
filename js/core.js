@@ -106,4 +106,4 @@ export const LANES=[
   {id:'perc',heb:'פרק'},
 ];
 
-export const LS_KEY='psyweave3';
+export const LS_KEY='psyweave17';
