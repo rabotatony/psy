@@ -168,3 +168,13 @@ body.perform .xy{height:140px}
 .corner.tr{top:5px;right:7px}
 .corner.bl{bottom:5px;left:7px}
 .corner.br{bottom:5px;right:7px}
+
+/* v11 smart play */
+.playpads{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ppad{padding:18px 4px;border-radius:13px;border:1px solid var(--accGlow);background:var(--accSoft);color:#fff;
+  font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;transition:transform .08s}
+.ppad:active{transform:scale(.93);background:var(--acc);box-shadow:0 0 18px var(--accGlow)}
+.playrow{display:flex;gap:8px;margin-top:8px}
+.playrow button{flex:1;padding:11px 8px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.04);
+  color:#cfd6e0;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;cursor:pointer}
+.playrow button.on{border-color:var(--acc);color:var(--acc);background:var(--accSoft);box-shadow:0 0 12px var(--accGlow)}
